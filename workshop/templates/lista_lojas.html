@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lojas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #242424;
+    --border: #2e2e2e; --accent: #c8f060; --text: #f0ede8;
+    --text-muted: #7a7870; --text-soft: #b0ada8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header {
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; background: var(--bg); z-index: 10;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s;
+  }
+  .back-btn:hover { color: var(--accent); }
+  header .sep { color: var(--border); font-size: 20px; }
+  header h1 { font-size: 15px; font-weight: 500; color: var(--text-soft); }
+  .badge {
+    margin-left: auto; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text-muted); background: var(--surface2);
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 14px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: #3e3e3e; }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; }
+  .card-nome { font-size: 16px; font-weight: 600; }
+  .card-loc {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+    background: var(--surface2); padding: 3px 10px; border-radius: 20px;
+  }
+  .card-campos { display: flex; flex-direction: column; gap: 8px; }
+  .campo-row { display: flex; justify-content: space-between; font-size: 13px; }
+  .campo-label { color: var(--text-muted); }
+  .campo-val { font-family: 'DM Mono', monospace; color: var(--text-soft); }
+  .campo-val.destaque { color: var(--accent); }
+  .owner-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px;
+  }
+  .vazio { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="back-btn">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M19 12H5M12 5l-7 7 7 7"/>
+    </svg>
+    Voltar
+  </a>
+  <span class="sep">›</span>
+  <h1>Lojas</h1>
+  <span class="badge">{{ lojas|length }} loja(s)</span>
+</header>
+
+<main>
+  {% if lojas %}
+  <div class="grid">
+    {% for loja in lojas %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-nome">{{ loja.nomeloja }}</span>
+        <span class="card-loc">📍 {{ loja.localizacao }}</span>
+      </div>
+      <div class="card-campos">
+        <div class="campo-row">
+          <span class="campo-label">Capital social</span>
+          <span class="campo-val destaque">{{ loja.capitalsocial }} €</span>
+        </div>
+        <div class="campo-row">
+          <span class="campo-label">Email</span>
+          <span class="campo-val">{{ loja.emailloja }}</span>
+        </div>
+        <div class="campo-row">
+          <span class="campo-label">Contacto</span>
+          <span class="campo-val">{{ loja.contacto }}</span>
+        </div>
+      </div>
+      <div class="owner-tag">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        Proprietário: {{ loja.owner.name }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="vazio">Nenhuma loja registada.</div>
+  {% endif %}
+</main>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!-- templates/vendasTESTE.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista de Vendas</title>
+</head>
+<body>
+    <h1>Lista de Vendas</h1>
+
+    {% if vendas %}
+    <ul>
+        {% for venda in vendas %}
+        <li>
+            <h3>Recibo nº {{ venda.recibo }}</h3>
+            <p><strong>Data:</strong> {{ venda.data }}</p>
+            <p><strong>Total:</strong> {{ venda.total }}€</p>
+
+            <p><strong>Produtos comprados:</strong></p>
+            <ul>
+                {% for linha in venda.linhas.all %}
+                <li>{{ linha.produto.nome }} — {{ linha.qtd }}x {{ linha.preco }}€</li>
+                {% endfor %}
+            </ul>
+        </li>
+        <hr>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Não existem vendas registadas.</p>
+    {% endif %}
+
+</body>
+</html>

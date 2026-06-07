@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loja — Início</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+      :root {
+        --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #242424;
+        --border: #2e2e2e; --accent: #c8f060; --text: #f0ede8;
+        --text-muted: #7a7870; --text-soft: #b0ada8;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg); color: var(--text);
+        min-height: 100vh; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 48px; padding: 40px;
+      }
+      #ecrã-lojas, #ecrã-menu {
+        width: 100%; max-width: 700px; display: flex;
+        flex-direction: column; align-items: center; gap: 36px;
+      }
+      #ecrã-menu { display: none; }
+      .titulo { text-align: center; }
+      .logo { font-family: "DM Mono", monospace; font-size: 13px; color: var(--accent); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 16px; }
+      h1 { font-size: 40px; font-weight: 300; line-height: 1.1; margin-bottom: 10px; }
+      h1 span { font-weight: 600; color: var(--accent); }
+      .subtitulo { font-size: 14px; color: var(--text-muted); }
+      .lojas-grid { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; width: 100%; }
+      .loja-btn {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 16px; padding: 22px 28px; cursor: pointer;
+        text-align: left; color: var(--text); font-family: "DM Sans", sans-serif;
+        transition: all 0.2s; display: flex; flex-direction: column; gap: 6px;
+        min-width: 200px; flex: 1;
+      }
+      .loja-detalhes { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+      .loja-detalhes span { font-size: 12px; color: var(--text-muted); }
+      .loja-btn:hover { border-color: var(--accent); transform: translateY(-3px); }
+      .loja-btn.selected { border-color: var(--accent); background: #1a2208; }
+      .loja-nome { font-size: 16px; font-weight: 600; }
+      .loja-loc { font-size: 12px; color: var(--text-muted); font-family: "DM Mono", monospace; }
+      .loja-capital { font-size: 12px; color: var(--accent); margin-top: 4px; }
+      .btn-entrar {
+        padding: 14px 40px; background: var(--accent); color: #0f0f0f;
+        border: none; border-radius: 12px; font-family: "DM Sans", sans-serif;
+        font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        opacity: 0.4; pointer-events: none;
+      }
+      .btn-entrar.ativo { opacity: 1; pointer-events: all; }
+      .btn-entrar.ativo:hover { background: #d8ff70; }
+      .menu-header { text-align: center; }
+      .menu-header .loja-label { font-family: "DM Mono", monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
+      .menu-header .loja-titulo { font-size: 28px; font-weight: 600; color: var(--accent); }
+      .menu-header .loja-info { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+      .cards { display: flex; gap: 20px; flex-wrap: nowrap; justify-content: center; }
+      .card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 20px; padding: 28px 24px; width: auto; flex: 1; max-width: 220px;
+        text-decoration: none; color: var(--text); transition: all 0.2s; display: flex; flex-direction: column; gap: 14px;
+      }
+      .card:hover { border-color: var(--accent); transform: translateY(-4px); }
+      .card-icon { width: 48px; height: 48px; background: #1e2a0e; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); }
+      .card h2 { font-size: 17px; font-weight: 600; }
+      .card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+      .card .arrow { font-family: "DM Mono", monospace; font-size: 12px; color: var(--accent); margin-top: 4px; }
+      .trocar-loja {
+        font-size: 12px; color: var(--text-muted); background: none;
+        border: 1px solid var(--border); border-radius: 20px;
+        padding: 7px 18px; cursor: pointer; font-family: "DM Sans", sans-serif; transition: all 0.15s;
+      }
+      .trocar-loja:hover { color: var(--text); border-color: var(--text-muted); }
+      .rodape { font-size: 12px; color: var(--text-muted); font-family: "DM Mono", monospace; }
+    </style>
+  </head>
+
+  <body>
+
+  <form id="form-loja" method="POST" action="/selecionar_loja/">
+    {% csrf_token %}
+    <input type="hidden" name="loja" id="input-loja" />
+  </form>
+
+  {% if loja_sessao %}
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("ecrã-lojas").style.display = "none";
+      document.getElementById("ecrã-menu").style.display = "flex";
+      document.getElementById("menu-nome").textContent = "{{ loja_sessao.nomeloja }}";
+      document.getElementById("menu-info").textContent =
+        `📍 {{ loja_sessao.localizacao }}  ·  ✉ {{ loja_sessao.emailloja }}  ·  👤 {{ loja_sessao.owner.name }}`;
+    });
+  </script>
+  {% endif %}
+
+  {% for message in messages %}
+  <p style="color:#ff6b6b; background:#2a0a0a; border:1px solid #5a1a1a; padding:12px; border-radius:8px; width:100%; text-align:center;">
+    ⚠ {{ message }}
+  </p>
+  {% endfor %}
+
+  <!-- ECRÃ 1: escolher loja -->
+  <div id="ecrã-lojas">
+    <div class="titulo">
+      <div class="logo">Sistema de Vendas</div>
+      <h1>Escolhe a<br /><span>tua loja</span></h1>
+      <p class="subtitulo">Seleciona uma loja para continuar</p>
+    </div>
+
+    <div style="width:100%; display:flex; justify-content:flex-end;">
+      <button class="trocar-loja"
+        onclick="document.getElementById('form-add').style.display = document.getElementById('form-add').style.display === 'none' ? 'block' : 'none'">
+        + Adicionar Loja
+      </button>
+    </div>
+
+    <div class="lojas-grid">
+      {% for loja in lojas %}
+      <div class="loja-btn"
+        data-nome="{{ loja.nomeloja }}"
+        data-loc="{{ loja.localizacao }}"
+        data-capital="{{ loja.capitalsocial }}"
+        data-email="{{ loja.emailloja }}"
+        data-contacto="{{ loja.contacto }}"
+        data-owner="{{ loja.owner.name }}"
+        onclick="selecionarLoja(this)">
+        <span class="loja-nome">{{ loja.nomeloja }}</span>
+        <span class="loja-loc">📍 {{ loja.localizacao }}</span>
+        <div class="loja-detalhes">
+          <span>✉ {{ loja.emailloja }}</span>
+          <span>📞 {{ loja.contacto }}</span>
+          <span>👤 {{ loja.owner.name }}</span>
+          <span class="loja-capital">💰 {{ loja.capitalsocial }} € capital</span>
+        </div>
+        <button type="button"
+          onclick="event.stopPropagation(); abrirModalRemover('{{ loja.nomeloja }}')"
+          style="margin-top:10px; width:100%; padding:6px; background:#2a0a0a; border:1px solid #5a1a1a; border-radius:8px; color:#ff6b6b; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;">
+          🗑 Remover loja
+        </button>
+      </div>
+      {% empty %}
+      <p style="color:var(--text-muted); font-size:14px">Nenhuma loja registada. Adiciona uma no admin.</p>
+      {% endfor %}
+    </div>
+
+    <button class="btn-entrar" id="btn-entrar" onclick="entrarLoja()">Entrar →</button>
+
+    <div id="form-add" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; width:100%;">
+      <h3 style="margin-bottom:16px; font-size:16px;">Nova Loja</h3>
+      <form method="POST" action="{% url 'adicionar_loja' %}">
+        {% csrf_token %}
+        <input type="text" name="nomeloja" placeholder="Nome da loja" required
+          style="width:100%; padding:10px; margin-bottom:10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+        <input type="text" name="localizacao" placeholder="Localização" required
+          style="width:100%; padding:10px; margin-bottom:10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+        <input type="number" name="capitalsocial" placeholder="Capital social" required
+          style="width:100%; padding:10px; margin-bottom:10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+        <input type="email" name="emailloja" placeholder="Email" required
+          style="width:100%; padding:10px; margin-bottom:10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+        <input type="number" name="contacto" placeholder="Contacto" required
+          style="width:100%; padding:10px; margin-bottom:10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+
+        <select name="owner_cc" required
+          style="width:100%; padding:10px; margin-bottom:6px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+          {% for owner in owners %}
+          <option value="{{ owner.cc }}">{{ owner.name }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="button" onclick="toggleNovoOwner()"
+          style="width:100%; padding:8px; margin-bottom:10px; background:none; border:1px dashed var(--border); border-radius:8px; color:var(--text-muted); font-size:12px; cursor:pointer;">
+          + Criar novo owner
+        </button>
+
+        <div id="form-novo-owner" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:10px;">
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.08em;">Novo Owner</p>
+          <input type="number" name="cc" placeholder="CC (número)"
+            style="width:100%; padding:10px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+          <input type="text" name="name" placeholder="Nome completo"
+            style="width:100%; padding:10px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+          <input type="date" name="birth"
+            style="width:100%; padding:10px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+          <input type="email" name="owner_email" placeholder="Email"
+            style="width:100%; padding:10px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+          <input type="number" name="contact" placeholder="Contacto"
+            style="width:100%; padding:10px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+          <input type="text" name="morada" placeholder="Morada"
+            style="width:100%; padding:10px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button type="submit" class="btn-entrar ativo" style="flex:1;">Guardar</button>
+          <button type="button" class="trocar-loja"
+            onclick="document.getElementById('form-add').style.display='none'">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ECRÃ 2: menu da loja -->
+  <div id="ecrã-menu">
+    <div class="menu-header">
+      <div class="loja-label">Loja selecionada</div>
+      <div class="loja-titulo" id="menu-nome"></div>
+      <div class="loja-info" id="menu-info"></div>
+    </div>
+
+    <div class="cards">
+      <a href="/nova_venda/" class="card">
+        <div class="card-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </div>
+        <h2>Nova Venda</h2>
+        <p>Escolhe produtos e regista uma nova venda.</p>
+        <div class="arrow">Entrar →</div>
+      </a>
+      <a href="/lista_vendas/" class="card">
+        <div class="card-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <h2>Lista de Vendas</h2>
+        <p>Consulta o histórico de todas as vendas.</p>
+        <div class="arrow">Entrar →</div>
+      </a>
+      <a href="/adicionar_produto/" class="card">
+        <div class="card-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </div>
+        <h2>Adicionar Produto</h2>
+        <p>Regista um novo produto nesta loja.</p>
+        <div class="arrow">Entrar →</div>
+      </a>
+    </div>
+
+    <a href="/trocar_loja/" class="trocar-loja">← Trocar loja</a>
+    <div class="rodape">Sistema POS v1.0</div>
+  </div>
+
+  <!-- Modal de confirmação com password -->
+  <div id="modal-remover" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; border:1px solid #2e2e2e; border-radius:20px; padding:40px; width:100%; max-width:380px; display:flex; flex-direction:column; gap:20px;">
+      <div style="font-family:'DM Mono',monospace; font-size:12px; color:#c8f060; letter-spacing:0.2em; text-transform:uppercase;">Sistema POS</div>
+      <h2 style="font-size:20px; font-weight:600;">Confirmar remoção</h2>
+      <p style="font-size:13px; color:#7a7870;">Vais remover a loja <strong id="modal-nome-loja" style="color:#f0ede8;"></strong> e todos os seus dados. Esta ação é irreversível.</p>
+      <div id="modal-erro" style="display:none; font-size:13px; color:#ff5f5f;"></div>
+      <form id="modal-form" method="POST" action="">
+        {% csrf_token %}
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:20px;">
+          <label style="font-size:12px; color:#7a7870; text-transform:uppercase; letter-spacing:0.08em;">Password</label>
+          <input id="modal-password" type="password" name="password"
+            style="background:#111; border:1px solid #2e2e2e; border-radius:10px; padding:12px 14px; color:#f0ede8; font-family:'DM Sans',sans-serif; font-size:14px; outline:none;">
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button type="button" onclick="validarPassword()"
+            style="flex:1; padding:14px; background:#c8f060; color:#0f0f0f; border:none; border-radius:10px; font-weight:600; cursor:pointer;">
+            Confirmar remoção
+          </button>
+          <button type="button" onclick="fecharModal()"
+            style="padding:14px 20px; background:none; border:1px solid #2e2e2e; border-radius:10px; color:#7a7870; cursor:pointer;">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let lojaAtual = null;
+
+    function selecionarLoja(btn) {
+      document.querySelectorAll(".loja-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      lojaAtual = {
+        nome: btn.dataset.nome,
+        loc: btn.dataset.loc,
+        capital: btn.dataset.capital,
+        email: btn.dataset.email,
+        contacto: btn.dataset.contacto,
+        owner: btn.dataset.owner,
+      };
+      document.getElementById("btn-entrar").classList.add("ativo");
+    }
+
+    function entrarLoja() {
+      if (!lojaAtual) return;
+      document.getElementById("menu-nome").textContent = lojaAtual.nome;
+      document.getElementById("menu-info").textContent =
+        `📍 ${lojaAtual.loc}  ·  ✉ ${lojaAtual.email}  ·  👤 ${lojaAtual.owner}`;
+      document.getElementById("input-loja").value = lojaAtual.nome;
+      document.getElementById("form-loja").submit();
+    }
+
+    function trocarLoja() {
+      lojaAtual = null;
+      document.querySelectorAll(".loja-btn").forEach(b => b.classList.remove("selected"));
+      document.getElementById("btn-entrar").classList.remove("ativo");
+      document.getElementById("ecrã-lojas").style.display = "flex";
+      document.getElementById("ecrã-menu").style.display = "none";
+    }
+
+    function abrirModalRemover(nomeLoja) {
+      document.getElementById("modal-nome-loja").textContent = nomeLoja;
+      document.getElementById("modal-form").action = `/loja/remover/${nomeLoja}/`;
+      document.getElementById("modal-password").value = "";
+      document.getElementById("modal-erro").style.display = "none";
+      document.getElementById("modal-remover").style.display = "flex";
+    }
+
+    function fecharModal() {
+      document.getElementById("modal-remover").style.display = "none";
+    }
+
+    async function validarPassword() {
+      const pass = document.getElementById("modal-password").value;
+      if (!pass) return;
+
+      const formData = new FormData();
+      formData.append("password", pass);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      const resp = await fetch("/verificar_password/", { method: "POST", body: formData });
+      const data = await resp.json();
+
+      if (data.valida) {
+        document.getElementById("modal-form").submit();
+      } else {
+        const erro = document.getElementById("modal-erro");
+        erro.textContent = "❌ Password incorreta. Tenta novamente.";
+        erro.style.display = "block";
+        document.getElementById("modal-password").value = "";
+        document.getElementById("modal-password").focus();
+      }
+    }
+
+    function toggleNovoOwner() {
+      const div = document.getElementById("form-novo-owner");
+      div.style.display = div.style.display === "none" ? "block" : "none";
+    }
+  </script>
+
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<!-- templates/produtosTESTE.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista de Produtos</title>
+</head>
+<body>
+    <h1>Lista de Produtos</h1>
+
+    {% if produtos %}
+    <ul>
+        {% for produto in produtos %}
+        <li>
+            <h3>{{ produto.nome }}</h3>
+
+            {% if produto.preco %}
+            <p><strong>Preço:</strong> {{ produto.preco }}€</p>
+            {% endif %}
+
+            {% if produto.seccao %}
+            <p><strong>Secção:</strong> {{ produto.seccao }}</p>
+            {% endif %}
+
+            {% if produto.qtd %}
+            <p><strong>Stock:</strong> {{ produto.qtd }} unidades</p>
+            {% endif %}
+
+            {% if produto.desconto %}
+            <p><strong>Desconto:</strong> {{ produto.desconto }}%</p>
+            {% endif %}
+        </li>
+        <hr>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Não existem produtos registados.</p>
+    {% endif %}
+
+</body>
+</html>
