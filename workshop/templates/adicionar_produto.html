@@ -133,31 +133,6 @@
         background: var(--surface2);
       }
 
-      .id-row {
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-      }
-      .id-row input {
-        flex: 1;
-      }
-      .btn-sugerir {
-        padding: 11px 14px;
-        background: none;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        color: var(--text-muted);
-        font-size: 12px;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: all 0.15s;
-        font-family: "DM Sans", sans-serif;
-      }
-      .btn-sugerir:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
       .alerta {
         padding: 13px 16px;
         border-radius: 10px;
@@ -231,26 +206,6 @@
         {% csrf_token %}
         <div class="form-grid">
           <div class="campo full">
-            <label>ID do produto</label>
-            <div class="id-row">
-              <input
-                type="number"
-                name="id"
-                id="campo-id"
-                value="{{ proximo_id }}"
-                required
-              />
-              <button
-                type="button"
-                class="btn-sugerir"
-                onclick="usarSugerido()"
-              >
-                Usar sugerido ({{ proximo_id }})
-              </button>
-            </div>
-          </div>
-
-          <div class="campo full">
             <label>Nome</label>
             <input
               type="text"
@@ -266,7 +221,8 @@
               type="number"
               name="preco"
               min="0"
-              placeholder="0"
+              step="0.01"
+              placeholder="0.00"
               required
             />
           </div>
@@ -284,6 +240,7 @@
           <div class="campo">
             <label>IVA (%)</label>
             <select name="iva">
+              <option value="0">0% — Isento</option>
               <option value="6">6% — Taxa reduzida</option>
               <option value="13">13% — Taxa intermédia</option>
               <option value="23" selected>23% — Taxa normal</option>
@@ -385,14 +342,44 @@
       </form>
     </main>
     <script>
-      const proximoId = {{ proximo_id }};
-
-      function usarSugerido() {
-        document.getElementById('campo-id').value = proximoId;
+      function mostrarInfoFornecedor(sel) {
+        const info = document.getElementById("forn-info");
+        const opt = sel.options[sel.selectedIndex];
+        if (!sel.value) {
+          info.style.display = "none";
+          return;
+        }
+        document.getElementById("forn-email").textContent = opt.dataset.email;
+        document.getElementById("forn-tel").textContent = opt.dataset.tel;
+        document.getElementById("forn-morada").textContent = opt.dataset.morada;
+        info.style.display = "flex";
       }
+    </script>
+    <script>
+      const CAMPOS = ['nome', 'preco', 'qtd', 'desconto', 'iva', 'seccao', 'fornecedor'];
+
+      // Restaurar valores guardados
+      CAMPOS.forEach(nome => {
+        const el = document.querySelector(`[name="${nome}"]`);
+        const val = localStorage.getItem('prod_' + nome);
+        if (el && val) el.value = val;
+      });
+
+      // Guardar sempre que algo muda
+      CAMPOS.forEach(nome => {
+        const el = document.querySelector(`[name="${nome}"]`);
+        if (el) el.addEventListener('input', () => {
+          localStorage.setItem('prod_' + nome, el.value);
+        });
+      });
+
+      // Limpar ao submeter com sucesso
+      {% if sucesso %}
+      CAMPOS.forEach(nome => localStorage.removeItem('prod_' + nome));
+      {% endif %}
 
       function mostrarInfoFornecedor(sel) {
-        const info = document.getElementById('forn-info');
+        const info = document.getElementById("forn-info");
         const opt = sel.options[sel.selectedIndex];
         if (!sel.value) { info.style.display = 'none'; return; }
         document.getElementById('forn-email').textContent = opt.dataset.email;

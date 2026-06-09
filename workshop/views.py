@@ -222,7 +222,6 @@ def selecionar_loja(request):
 
 
 @login_required(login_url='login')
-@login_required(login_url='login')
 def adicionar_produto(request):
     loja_nome = request.session.get('loja_atual')
     if not loja_nome:
@@ -236,24 +235,20 @@ def adicionar_produto(request):
 
     if request.method == 'POST':
         try:
-            produto_id   = int(request.POST.get('id'))
-            nome         = request.POST.get('nome', '').strip()
-            preco        = int(request.POST.get('preco'))
-            qtd          = int(request.POST.get('qtd'))
-            desconto     = int(request.POST.get('desconto', 0))
-            iva          = int(request.POST.get('iva', 23))
-            seccao_nome  = request.POST.get('seccao')
+            nome           = request.POST.get('nome', '').strip()
+            preco          = float(request.POST.get('preco'))  
+            qtd            = int(request.POST.get('qtd'))
+            desconto       = int(request.POST.get('desconto', 0))
+            iva            = int(request.POST.get('iva', 0))
+            seccao_nome    = request.POST.get('seccao')
             fornecedor_nif = request.POST.get('fornecedor') or None
 
-            if Produto.objects.filter(id=produto_id).exists():
-                erro = f'Já existe um produto com o ID {produto_id}.'
-            elif not nome:
+            if not nome:
                 erro = 'O nome não pode estar vazio.'
             else:
                 seccao = Seccao.objects.get(nome=seccao_nome)
                 fornecedor = Fornecedor.objects.get(nif=fornecedor_nif) if fornecedor_nif else None
                 Produto.objects.create(
-                    id=produto_id,
                     nome=nome,
                     preco=preco,
                     qtd=qtd,
@@ -267,17 +262,14 @@ def adicionar_produto(request):
         except Exception as e:
             erro = f'Erro: {e}'
 
-    ultimo = Produto.objects.order_by('-id').first()
-    proximo_id = (ultimo.id + 1) if ultimo else 1
-
     return render(request, 'adicionar_produto.html', {
         'seccoes': seccoes,
         'fornecedores': fornecedores,
         'loja_atual': loja_nome,
-        'proximo_id': proximo_id,
         'erro': erro,
         'sucesso': sucesso,
     })
+
 
 @login_required(login_url='login')
 def adicionar_seccao(request):
@@ -393,3 +385,27 @@ def adicionar_fornecedor(request):
         'erro': erro,
         'sucesso': sucesso,
     })
+
+
+@login_required(login_url='login')
+def editar_produto(request, produto_id):
+    if request.method == 'POST':
+        try:
+            dados = json.loads(request.body)
+            password = dados.get('password', '')
+            user = authenticate(request, username=request.user.username, password=password)
+            if not user:
+                return JsonResponse({'erro': 'Password incorreta.'}, status=403)
+            produto = get_object_or_404(Produto, id=produto_id)
+            produto.preco      = float(dados['preco'])
+            produto.desconto   = int(dados['desconto'])
+            produto.iva        = int(dados['iva'])
+            produto.qtd        = int(dados['qtd'])
+            produto.seccao     = Seccao.objects.get(nome=dados['seccao'])
+            fornecedor_nome    = dados.get('fornecedor')
+            produto.fornecedor = Fornecedor.objects.get(nome=fornecedor_nome) if fornecedor_nome else None
+            produto.save()
+            return JsonResponse({'sucesso': True})
+        except Exception as e:
+            return JsonResponse({'erro': str(e)}, status=400)
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)

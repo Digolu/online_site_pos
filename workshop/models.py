@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import AutoField
+
 
 class Owner(models.Model):
     cc = models.IntegerField(primary_key=True)
@@ -67,9 +69,9 @@ class Fornecedor(models.Model):
 
 
 class Produto(models.Model):
-    id = models.BigIntegerField(primary_key=True)
+    id = AutoField(primary_key=True)
     nome = models.CharField(max_length=512)
-    preco = models.IntegerField()
+    preco = models.FloatField()  
     qtd = models.IntegerField()
     desconto = models.IntegerField()
     iva = models.IntegerField()
