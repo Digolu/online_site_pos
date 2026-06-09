@@ -25,4 +25,5 @@ urlpatterns = [
     path('owner/adicionar/', views.adicionar_owner, name='adicionar_owner'),
     path('adicionar_fornecedor/', views.adicionar_fornecedor, name='adicionar_fornecedor'),
     path('editar_produto/<int:produto_id>/', views.editar_produto, name='editar_produto'),
+    path('ocultar_produto/<int:produto_id>/', views.ocultar_produto, name='ocultar_produto'),
 ]

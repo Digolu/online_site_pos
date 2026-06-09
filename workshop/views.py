@@ -56,7 +56,7 @@ def nova_venda(request):
     proximo_recibo = (ultima_venda.recibo + 1) if ultima_venda else 1001
 
     produtos_lista = []
-    for p in Produto.objects.filter(loja__nomeloja=loja_nome):        
+    for p in Produto.objects.filter(loja__nomeloja=loja_nome, oculto=False):
         produtos_lista.append({
             'id': p.id,
             'nome': p.nome,
@@ -404,6 +404,23 @@ def editar_produto(request, produto_id):
             produto.seccao     = Seccao.objects.get(nome=dados['seccao'])
             fornecedor_nome    = dados.get('fornecedor')
             produto.fornecedor = Fornecedor.objects.get(nome=fornecedor_nome) if fornecedor_nome else None
+            produto.save()
+            return JsonResponse({'sucesso': True})
+        except Exception as e:
+            return JsonResponse({'erro': str(e)}, status=400)
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+@login_required(login_url='login')
+def ocultar_produto(request, produto_id):
+    if request.method == 'POST':
+        try:
+            dados = json.loads(request.body)
+            password = dados.get('password', '')
+            user = authenticate(request, username=request.user.username, password=password)
+            if not user:
+                return JsonResponse({'erro': 'Password incorreta.'}, status=403)
+            produto = get_object_or_404(Produto, id=produto_id)
+            produto.oculto = True
             produto.save()
             return JsonResponse({'sucesso': True})
         except Exception as e:

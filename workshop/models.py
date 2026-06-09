@@ -75,6 +75,7 @@ class Produto(models.Model):
     qtd = models.IntegerField()
     desconto = models.IntegerField()
     iva = models.IntegerField()
+    oculto = models.BooleanField(default=False)
     seccao = models.ForeignKey(
         Seccao,
         on_delete=models.RESTRICT,

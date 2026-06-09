@@ -247,6 +247,30 @@
         border-color: var(--accent);
       }
 
+      .btn-ocultar-card {
+        position: absolute;
+        top: 10px;
+        right: 42px;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        z-index: 2;
+        flex-shrink: 0;
+      }
+      .btn-ocultar-card:hover {
+        background: rgba(255, 95, 95, 0.15);
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+
       .tag-seccao {
         display: inline-block;
         font-size: 10px;
@@ -294,7 +318,7 @@
       .add-indicator {
         position: absolute;
         top: 12px;
-        right: 40px;
+        right: 76px;
         width: 22px;
         height: 22px;
         border-radius: 50%;
@@ -1034,6 +1058,19 @@
         <div class="modal-btns" style="margin-top: 10px">
           <button
             class="btn-cancelar-modal"
+            style="
+              width: 100%;
+              border-color: var(--danger);
+              color: var(--danger);
+            "
+            onclick="confirmarOcultarModal()"
+          >
+            👁‍🗨 Ocultar produto do menu
+          </button>
+        </div>
+        <div class="modal-btns" style="margin-top: 8px">
+          <button
+            class="btn-cancelar-modal"
             style="width: 100%"
             onclick="fecharModalEditar()"
           >
@@ -1042,366 +1079,451 @@
         </div>
       </div>
     </div>
+      <!-- MODAL PASSWORD OCULTAR -->
+    <div class="overlay" id="overlay-ocultar">
+      <div class="modal" style="max-width:360px">
+        <h3>Ocultar produto</h3>
+        <p id="ocultar-subtitulo" style="margin-bottom:20px">O produto deixará de aparecer no menu de nova venda.</p>
+        <div class="edit-campo">
+          <label>Password de confirmação</label>
+          <input type="password" id="ocultar-password" placeholder="Introduz a tua password" />
+        </div>
+        <div class="modal-btns" style="margin-top:20px">
+          <button class="btn-cancelar-modal" onclick="fecharModalOcultar()">Cancelar</button>
+          <button class="btn-guardar-modal" onclick="executarOcultar()" style="background:var(--danger);color:#fff">
+            Ocultar
+          </button>
+        </div>
+      </div>
 
     <div class="toast" id="toast"></div>
 
     <script>
-                  const produtos = {{ produtos_json|safe }};
-                  let carrinho = {};
-                  let seccaoAtiva = 'todos';
-                  let recibo = {{ proximo_recibo }};
-                  let produtoEmEdicao = null;
+      const produtos = {{ produtos_json|safe }};
+      let carrinho = {};
+      let seccaoAtiva = 'todos';
+      let recibo = {{ proximo_recibo }};
+      let produtoEmEdicao = null;
 
-                  document.getElementById('recibo-display').textContent = `Recibo #${recibo}`;
+      document.getElementById('recibo-display').textContent = `Recibo #${recibo}`;
 
-                  // ── SECÇÕES E FORNECEDORES (extraídos dos produtos para os selects de edição) ──
-                  const seccoes = [...new Set(produtos.map(p => p.seccao))];
-                  const fornecedores = [...new Map(
-                    produtos.filter(p => p.fornecedor).map(p => [p.fornecedor, p.fornecedor])
-                  ).values()];
+      // ── SECÇÕES E FORNECEDORES (extraídos dos produtos para os selects de edição) ──
+      const seccoes = [...new Set(produtos.map(p => p.seccao))];
+      const fornecedores = [...new Map(
+      produtos.filter(p => p.fornecedor).map(p => [p.fornecedor, p.fornecedor])
+      ).values()];
 
-                  function init() {
-                    const filtros = document.getElementById('filtros');
-                    seccoes.forEach(s => {
-                      const btn = document.createElement('button');
-                      btn.className = 'filtro-btn';
-                      btn.textContent = s;
-                      btn.onclick = () => filtrarSeccao(s, btn);
-                      filtros.appendChild(btn);
-                    });
-                    renderGrid();
-                  }
+      // ── OCULTAR PRODUTO ───────────────────────────────────────────
+      function confirmarOcultar(e, id, nome) {
+      e.stopPropagation();
+      if (!confirm(`Ocultar "${nome}" do menu de nova venda?\n\nO produto não será apagado da base de dados.`)) return;
+      pedirPasswordOcultar(id);
+      }
 
-                  function renderGrid() {
-                    const query = document.getElementById('search').value.toLowerCase();
-                    const grid = document.getElementById('grid');
-                    grid.innerHTML = '';
+      function confirmarOcultarModal() {
+      if (!produtoEmEdicao) return;
+      if (!confirm(`Ocultar "${produtoEmEdicao.nome}" do menu de nova venda?\n\nO produto não será apagado da base de dados.`)) return;
+      pedirPasswordOcultar(produtoEmEdicao.id, true);
+      }
 
-                    const filtrados = produtos.filter(p => {
-                      const matchSeccao = seccaoAtiva === 'todos' || p.seccao === seccaoAtiva;
-                      const matchSearch = p.nome.toLowerCase().includes(query);
-                      return matchSeccao && matchSearch;
-                    });
+      let ocultarId = null;
+let ocultarFecharEditar = false;
 
-                    if (filtrados.length === 0) {
-                      grid.innerHTML = '<p class="nenhum">Nenhum produto encontrado.</p>';
-                      return;
-                    }
+function pedirPasswordOcultar(id, fecharEditar = false) {
+  ocultarId = id;
+  ocultarFecharEditar = fecharEditar;
+  document.getElementById('ocultar-password').value = '';
+  document.getElementById('overlay-ocultar').classList.add('show');
+  setTimeout(() => document.getElementById('ocultar-password').focus(), 50);
+}
 
-                    filtrados.forEach(p => {
-                      const semStock = p.qtd === 0;
-                      const adicionado = carrinho[p.id] ? true : false;
-                      const precoFinal = p.desconto > 0
-                        ? (p.preco * (1 - p.desconto / 100)).toFixed(2)
-                        : p.preco.toFixed(2);
+function fecharModalOcultar() {
+  document.getElementById('overlay-ocultar').classList.remove('show');
+  document.getElementById('ocultar-password').value = '';
+  ocultarId = null;
+}
 
-                      let stockLabel = `${p.qtd} em stock`;
-                      let stockClass = '';
-                      if (p.qtd === 0) { stockLabel = 'Esgotado'; stockClass = 'esgotado'; }
-                      else if (p.qtd <= 5) { stockClass = 'baixo'; stockLabel = `Só ${p.qtd} restantes!`; }
+function executarOcultar() {
+  const pass = document.getElementById('ocultar-password').value;
+  if (!pass) { mostrarToast('Introduz a password.'); return; }
 
-                      const card = document.createElement('div');
-                      card.className = `produto-card${semStock ? ' sem-stock' : ''}${adicionado ? ' adicionado' : ''}`;
-                      card.id = `card-${p.id}`;
-                      card.onclick = (e) => {
-                        if (e.target.closest('.btn-editar-card')) return; // não adicionar ao clicar no lápis
-                        if (!semStock) adicionarAoCarrinho(p);
-                      };
+  fetch(`/ocultar_produto/${ocultarId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({ password: pass })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.sucesso) {
+      const idx = produtos.findIndex(x => x.id === ocultarId);
+      if (idx !== -1) produtos.splice(idx, 1);
+      if (ocultarFecharEditar) fecharModalEditar();
+      fecharModalOcultar();
+      renderGrid();
+      mostrarToast('✓ Produto ocultado do menu.');
+    } else {
+      mostrarToast('Erro: ' + data.erro);
+      document.getElementById('ocultar-password').value = '';
+    }
+  })
+  .catch(() => mostrarToast('Erro ao ocultar produto.'));
+}
 
-                      card.innerHTML = `
-                        <button class="btn-editar-card" title="Editar produto" onclick="abrirModalEditar(${p.id})">
-                          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
-                        </button>
-                        <div class="add-indicator">✓</div>
-                        <div class="tag-seccao">${p.seccao}</div>
-                        <div class="produto-nome">${p.nome}</div>
-                        ${p.fornecedor ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">🏭 ${p.fornecedor}</div>` : ''}
-                        ${p.desconto > 0 ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;margin-top:2px">${p.preco.toFixed(2)}€</div>` : ''}
-                        <div class="produto-meta">
-                          <span class="produto-preco">${precoFinal}€${p.desconto > 0 ? ` <span style="font-size:10px;color:var(--accent-dim);font-family:'DM Sans'">-${p.desconto}%</span>` : ''}</span>
-                          <span class="produto-stock ${stockClass}">${stockLabel}</span>
-                        </div>
-                      `;
-                      grid.appendChild(card);
-                    });
-                  }
+      function init() {
+      const filtros = document.getElementById('filtros');
+      seccoes.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'filtro-btn';
+      btn.textContent = s;
+      btn.onclick = () => filtrarSeccao(s, btn);
+      filtros.appendChild(btn);
+      });
+      renderGrid();
+      }
 
-                  function filtrarSeccao(seccao, btn) {
-                    seccaoAtiva = seccao;
-                    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    renderGrid();
-                  }
+      function renderGrid() {
+      const query = document.getElementById('search').value.toLowerCase();
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
 
-                  function filtrar() { renderGrid(); }
+      const filtrados = produtos.filter(p => {
+      const matchSeccao = seccaoAtiva === 'todos' || p.seccao === seccaoAtiva;
+      const matchSearch = p.nome.toLowerCase().includes(query);
+      return matchSeccao && matchSearch;
+      });
 
-                  // ── MODAL EDITAR ──────────────────────────────────────────────
-                  function abrirModalEditar(id) {
-                    const p = produtos.find(x => x.id === id);
-                    if (!p) return;
-                    produtoEmEdicao = p;
+      if (filtrados.length === 0) {
+      grid.innerHTML = '<p class="nenhum">Nenhum produto encontrado.</p>';
+      return;
+      }
 
-                    document.getElementById('edit-subtitulo').textContent = `A editar: ${p.nome}`;
-                    document.getElementById('edit-nome').value = p.nome;
-                    document.getElementById('edit-id').value = p.id;
-                    document.getElementById('edit-qtd').value = p.qtd;
-                    document.getElementById('edit-preco').value = p.preco;
-                    document.getElementById('edit-desconto').value = p.desconto || 0;
-                    document.getElementById('edit-password').value = '';
+      filtrados.forEach(p => {
+      const semStock = p.qtd === 0;
+      const adicionado = carrinho[p.id] ? true : false;
+      const precoFinal = p.desconto > 0
+      ? (p.preco * (1 - p.desconto / 100)).toFixed(2)
+      : p.preco.toFixed(2);
 
-                    // IVA
-                    const ivaSelect = document.getElementById('edit-iva');
-                    ivaSelect.value = p.iva || 23;
+      let stockLabel = `${p.qtd} em stock`;
+      let stockClass = '';
+      if (p.qtd === 0) { stockLabel = 'Esgotado'; stockClass = 'esgotado'; }
+      else if (p.qtd <= 5) { stockClass = 'baixo'; stockLabel = `Só ${p.qtd} restantes!`; }
 
-                    // Secções
-                    const seccaoSelect = document.getElementById('edit-seccao');
-                    seccaoSelect.innerHTML = seccoes.map(s =>
-                      `<option value="${s}" ${s === p.seccao ? 'selected' : ''}>${s}</option>`
-                    ).join('');
+      const card = document.createElement('div');
+      card.className = `produto-card${semStock ? ' sem-stock' : ''}${adicionado ? ' adicionado' : ''}`;
+      card.id = `card-${p.id}`;
+      card.onclick = (e) => {
+        if (e.target.closest('.btn-editar-card')) return;
+        if (e.target.closest('.btn-ocultar-card')) return;
+        if (!semStock) adicionarAoCarrinho(p);
+      };
 
-                    // Fornecedores
-                    const fornSelect = document.getElementById('edit-fornecedor');
-                    fornSelect.innerHTML = `<option value="">— Sem fornecedor —</option>` +
-                      fornecedores.map(f =>
-                        `<option value="${f}" ${f === p.fornecedor ? 'selected' : ''}>${f}</option>`
-                      ).join('');
+      card.innerHTML = `
+      <button class="btn-editar-card" title="Editar produto" onclick="abrirModalEditar(${p.id})">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      </button>
+      <button class="btn-ocultar-card" title="Ocultar produto do menu" onclick="confirmarOcultar(event, ${p.id}, '${p.nome.replace(/'/g, "\\'")}')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+      </button>
+      <div class="add-indicator">✓</div>
+      <div class="tag-seccao">${p.seccao}</div>
+      <div class="produto-nome">${p.nome}</div>
+      ${p.fornecedor ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">🏭 ${p.fornecedor}</div>` : ''}
+      ${p.desconto > 0 ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;margin-top:2px">${p.preco.toFixed(2)}€</div>` : ''}
+      <div class="produto-meta">
+      <span class="produto-preco">${precoFinal}€${p.desconto > 0 ? ` <span style="font-size:10px;color:var(--accent-dim);font-family:'DM Sans'">-${p.desconto}%</span>` : ''}</span>
+      <span class="produto-stock ${stockClass}">${stockLabel}</span>
+      </div>
+      `;
+      grid.appendChild(card);
+      });
+      }
 
-                    document.getElementById('overlay-editar').classList.add('show');
-                  }
+      function filtrarSeccao(seccao, btn) {
+      seccaoAtiva = seccao;
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderGrid();
+      }
+
+      function filtrar() { renderGrid(); }
+
+      // ── MODAL EDITAR ──────────────────────────────────────────────
+      function abrirModalEditar(id) {
+      const p = produtos.find(x => x.id === id);
+      if (!p) return;
+      produtoEmEdicao = p;
+
+      document.getElementById('edit-subtitulo').textContent = `A editar: ${p.nome}`;
+      document.getElementById('edit-nome').value = p.nome;
+      document.getElementById('edit-id').value = p.id;
+      document.getElementById('edit-qtd').value = p.qtd;
+      document.getElementById('edit-preco').value = p.preco;
+      document.getElementById('edit-desconto').value = p.desconto || 0;
+      document.getElementById('edit-password').value = '';
+
+      // IVA
+      const ivaSelect = document.getElementById('edit-iva');
+      ivaSelect.value = p.iva || 23;
+
+      // Secções
+      const seccaoSelect = document.getElementById('edit-seccao');
+      seccaoSelect.innerHTML = seccoes.map(s =>
+      `<option value="${s}" ${s === p.seccao ? 'selected' : ''}>${s}</option>`
+      ).join('');
+
+      // Fornecedores
+      const fornSelect = document.getElementById('edit-fornecedor');
+      fornSelect.innerHTML = `<option value="">— Sem fornecedor —</option>` +
+      fornecedores.map(f =>
+      `<option value="${f}" ${f === p.fornecedor ? 'selected' : ''}>${f}</option>`
+      ).join('');
+
+      document.getElementById('overlay-editar').classList.add('show');
+      }
 
       function fecharModalEditar() {
-        document.getElementById('overlay-editar').classList.remove('show');
-        document.getElementById('edit-password').value = '';
-        produtoEmEdicao = null;
+      document.getElementById('overlay-editar').classList.remove('show');
+      document.getElementById('edit-password').value = '';
+      produtoEmEdicao = null;
       }
-            function guardarEdicao() {
-              if (!produtoEmEdicao) return;
+      function guardarEdicao() {
+      if (!produtoEmEdicao) return;
 
-              const password = document.getElementById('edit-password').value;
-              if (!password) { mostrarToast('Introduz a password.'); return; }
+      const password = document.getElementById('edit-password').value;
+      if (!password) { mostrarToast('Introduz a password.'); return; }
 
-              fetch(`/editar_produto/${produtoEmEdicao.id}/`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                  password,
-                  preco:      parseFloat(document.getElementById('edit-preco').value),
-                  desconto:   parseInt(document.getElementById('edit-desconto').value) || 0,
-                  iva:        parseInt(document.getElementById('edit-iva').value),
-                  qtd:        parseInt(document.getElementById('edit-qtd').value),
-                  seccao:     document.getElementById('edit-seccao').value,
-                  fornecedor: document.getElementById('edit-fornecedor').value || null,
-                })
-              })
-              .then(res => res.json())
-              .then(data => {
-                if (data.sucesso) {
-                  const idx = produtos.findIndex(x => x.id === produtoEmEdicao.id);
-                  if (idx !== -1) {
-                    produtos[idx].preco     = parseFloat(document.getElementById('edit-preco').value);
-                    produtos[idx].desconto  = parseInt(document.getElementById('edit-desconto').value) || 0;
-                    produtos[idx].iva       = parseInt(document.getElementById('edit-iva').value);
-                    produtos[idx].qtd       = parseInt(document.getElementById('edit-qtd').value);
-                    produtos[idx].seccao    = document.getElementById('edit-seccao').value;
-                    produtos[idx].fornecedor = document.getElementById('edit-fornecedor').value || null;
-                  }
-                  fecharModalEditar();
-                  renderGrid();
-                  mostrarToast('✓ Produto atualizado!');
-                } else {
-                  mostrarToast('Erro: ' + data.erro);
-                  document.getElementById('edit-password').value = '';
-                }
-              })
-              .catch(() => mostrarToast('Erro ao guardar.'));
-            }
+      fetch(`/editar_produto/${produtoEmEdicao.id}/`, {
+      method: 'POST',
+      headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify({
+      password,
+      preco:      parseFloat(document.getElementById('edit-preco').value),
+      desconto:   parseInt(document.getElementById('edit-desconto').value) || 0,
+      iva:        parseInt(document.getElementById('edit-iva').value),
+      qtd:        parseInt(document.getElementById('edit-qtd').value),
+      seccao:     document.getElementById('edit-seccao').value,
+      fornecedor: document.getElementById('edit-fornecedor').value || null,
+      })
+      })
+      .then(res => res.json())
+      .then(data => {
+      if (data.sucesso) {
+      const idx = produtos.findIndex(x => x.id === produtoEmEdicao.id);
+      if (idx !== -1) {
+      produtos[idx].preco     = parseFloat(document.getElementById('edit-preco').value);
+      produtos[idx].desconto  = parseInt(document.getElementById('edit-desconto').value) || 0;
+      produtos[idx].iva       = parseInt(document.getElementById('edit-iva').value);
+      produtos[idx].qtd       = parseInt(document.getElementById('edit-qtd').value);
+      produtos[idx].seccao    = document.getElementById('edit-seccao').value;
+      produtos[idx].fornecedor = document.getElementById('edit-fornecedor').value || null;
+      }
+      fecharModalEditar();
+      renderGrid();
+      mostrarToast('✓ Produto atualizado!');
+      } else {
+      mostrarToast('Erro: ' + data.erro);
+      document.getElementById('edit-password').value = '';
+      }
+      })
+      .catch(() => mostrarToast('Erro ao guardar.'));
+      }
 
 
-                  // ── CARRINHO ──────────────────────────────────────────────────
-                  function adicionarAoCarrinho(produto) {
-                    const precoFinal = produto.desconto > 0
-                      ? parseFloat((produto.preco * (1 - produto.desconto / 100)).toFixed(2))
-                      : produto.preco;
+      // ── CARRINHO ──────────────────────────────────────────────────
+      function adicionarAoCarrinho(produto) {
+      const precoFinal = produto.desconto > 0
+      ? parseFloat((produto.preco * (1 - produto.desconto / 100)).toFixed(2))
+      : produto.preco;
 
-                    if (carrinho[produto.id]) {
-                      if (carrinho[produto.id].qty >= produto.qtd) { mostrarToast('Stock insuficiente!'); return; }
-                      carrinho[produto.id].qty++;
-                    } else {
-                      carrinho[produto.id] = { produto, qty: 1, preco: precoFinal };
-                      document.getElementById(`card-${produto.id}`)?.classList.add('adicionado');
-                    }
-                    mostrarToast(`${produto.nome} adicionado`);
-                    renderCarrinho();
-                  }
+      if (carrinho[produto.id]) {
+      if (carrinho[produto.id].qty >= produto.qtd) { mostrarToast('Stock insuficiente!'); return; }
+      carrinho[produto.id].qty++;
+      } else {
+      carrinho[produto.id] = { produto, qty: 1, preco: precoFinal };
+      document.getElementById(`card-${produto.id}`)?.classList.add('adicionado');
+      }
+      mostrarToast(`${produto.nome} adicionado`);
+      renderCarrinho();
+      }
 
-                  function removerItem(id) {
-                    delete carrinho[id];
-                    document.getElementById(`card-${id}`)?.classList.remove('adicionado');
-                    renderCarrinho();
-                  }
+      function removerItem(id) {
+      delete carrinho[id];
+      document.getElementById(`card-${id}`)?.classList.remove('adicionado');
+      renderCarrinho();
+      }
 
-                  function alterarQty(id, delta) {
-                    if (!carrinho[id]) return;
-                    const novaQty = carrinho[id].qty + delta;
-                    const maxStock = carrinho[id].produto.qtd;
-                    if (novaQty <= 0) { removerItem(id); return; }
-                    if (novaQty > maxStock) { mostrarToast('Stock insuficiente!'); return; }
-                    carrinho[id].qty = novaQty;
-                    renderCarrinho();
-                  }
+      function alterarQty(id, delta) {
+      if (!carrinho[id]) return;
+      const novaQty = carrinho[id].qty + delta;
+      const maxStock = carrinho[id].produto.qtd;
+      if (novaQty <= 0) { removerItem(id); return; }
+      if (novaQty > maxStock) { mostrarToast('Stock insuficiente!'); return; }
+      carrinho[id].qty = novaQty;
+      renderCarrinho();
+      }
 
-                  function limparCarrinho() {
-                    Object.keys(carrinho).forEach(id => document.getElementById(`card-${id}`)?.classList.remove('adicionado'));
-                    carrinho = {};
-                    renderCarrinho();
-                  }
+      function limparCarrinho() {
+      Object.keys(carrinho).forEach(id => document.getElementById(`card-${id}`)?.classList.remove('adicionado'));
+      carrinho = {};
+      renderCarrinho();
+      }
 
-                  function renderCarrinho() {
-                    const container = document.getElementById('carrinho-itens');
-                    const vazio = document.getElementById('carrinho-vazio');
-                    const itens = Object.values(carrinho);
-                    document.getElementById('count').textContent = itens.length;
+      function renderCarrinho() {
+      const container = document.getElementById('carrinho-itens');
+      const vazio = document.getElementById('carrinho-vazio');
+      const itens = Object.values(carrinho);
+      document.getElementById('count').textContent = itens.length;
 
-                    if (itens.length === 0) {
-                      container.innerHTML = '';
-                      container.appendChild(vazio);
-                      document.getElementById('btn-confirmar').disabled = true;
-                      document.getElementById('subtotal').textContent = '0.00 €';
-                      document.getElementById('iva-total').textContent = '0.00 €';
-                      document.getElementById('total').textContent = '0.00 €';
-                      return;
-                    }
+      if (itens.length === 0) {
+      container.innerHTML = '';
+      container.appendChild(vazio);
+      document.getElementById('btn-confirmar').disabled = true;
+      document.getElementById('subtotal').textContent = '0.00 €';
+      document.getElementById('iva-total').textContent = '0.00 €';
+      document.getElementById('total').textContent = '0.00 €';
+      return;
+      }
 
-                    container.innerHTML = '';
-                    let subtotal = 0, ivaTotal = 0;
+      container.innerHTML = '';
+      let subtotal = 0, ivaTotal = 0;
 
-                    itens.forEach(({ produto, qty, preco }) => {
-                      const sub = preco * qty;
-                      const iva = sub * (produto.iva / 100);
-                      subtotal += sub; ivaTotal += iva;
-                      const div = document.createElement('div');
-                      div.className = 'item-venda';
-                      div.innerHTML = `
-                        <div class="item-nome">${produto.nome}</div>
-                        <div class="item-controls">
-                          <div class="qty-controls">
-                            <button class="qty-btn" onclick="alterarQty(${produto.id}, -1)">−</button>
-                            <span class="qty-value">${qty}</span>
-                            <button class="qty-btn" onclick="alterarQty(${produto.id}, +1)">+</button>
-                          </div>
-                          <span class="item-subtotal">${sub.toFixed(2)} €</span>
-                          <button class="item-remover" onclick="removerItem(${produto.id})" title="Remover">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                            </svg>
-                          </button>
-                        </div>
-                      `;
-                      container.appendChild(div);
-                    });
+      itens.forEach(({ produto, qty, preco }) => {
+      const sub = preco * qty;
+      const iva = sub * (produto.iva / 100);
+      subtotal += sub; ivaTotal += iva;
+      const div = document.createElement('div');
+      div.className = 'item-venda';
+      div.innerHTML = `
+      <div class="item-nome">${produto.nome}</div>
+      <div class="item-controls">
+      <div class="qty-controls">
+      <button class="qty-btn" onclick="alterarQty(${produto.id}, -1)">−</button>
+      <span class="qty-value">${qty}</span>
+      <button class="qty-btn" onclick="alterarQty(${produto.id}, +1)">+</button>
+      </div>
+      <span class="item-subtotal">${sub.toFixed(2)} €</span>
+      <button class="item-remover" onclick="removerItem(${produto.id})" title="Remover">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+      </svg>
+      </button>
+      </div>
+      `;
+      container.appendChild(div);
+      });
 
-                    const total = subtotal + ivaTotal;
-                    document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
-                    document.getElementById('iva-total').textContent = ivaTotal.toFixed(2) + ' €';
-                    document.getElementById('total').textContent = total.toFixed(2) + ' €';
-                    document.getElementById('btn-confirmar').disabled = false;
-                  }
+      const total = subtotal + ivaTotal;
+      document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
+      document.getElementById('iva-total').textContent = ivaTotal.toFixed(2) + ' €';
+      document.getElementById('total').textContent = total.toFixed(2) + ' €';
+      document.getElementById('btn-confirmar').disabled = false;
+      }
 
-                  // ── MODAL VENDA ───────────────────────────────────────────────
-                  function abrirModal() {
-                    const itens = Object.values(carrinho);
-                    let subtotal = 0, ivaTotal = 0;
-                    const modalItens = document.getElementById('modal-itens');
-                    modalItens.innerHTML = '';
-                    itens.forEach(({ produto, qty, preco }) => {
-                      const sub = preco * qty;
-                      const iva = sub * (produto.iva / 100);
-                      subtotal += sub; ivaTotal += iva;
-                      const div = document.createElement('div');
-                      div.className = 'modal-item';
-                      div.innerHTML = `<span>${produto.nome} × ${qty}</span><span style="font-family:'DM Mono',monospace">${sub.toFixed(2)} €</span>`;
-                      modalItens.appendChild(div);
-                    });
-                    totalAtual = parseFloat((subtotal + ivaTotal).toFixed(2));
-                    document.getElementById('modal-recibo').textContent = `#${recibo}`;
-                    document.getElementById('modal-total-val').textContent = totalAtual.toFixed(2) + ' €';
-                    document.getElementById('valor-recebido').value = '';
-                    document.getElementById('troco-val').textContent = '—';
-                    document.getElementById('btn-guardar').disabled = true;
-                    document.getElementById('overlay').classList.add('show');
-                    setTimeout(() => document.getElementById('valor-recebido').focus(), 50);
-                  }
+      // ── MODAL VENDA ───────────────────────────────────────────────
+      function abrirModal() {
+      const itens = Object.values(carrinho);
+      let subtotal = 0, ivaTotal = 0;
+      const modalItens = document.getElementById('modal-itens');
+      modalItens.innerHTML = '';
+      itens.forEach(({ produto, qty, preco }) => {
+      const sub = preco * qty;
+      const iva = sub * (produto.iva / 100);
+      subtotal += sub; ivaTotal += iva;
+      const div = document.createElement('div');
+      div.className = 'modal-item';
+      div.innerHTML = `<span>${produto.nome} × ${qty}</span><span style="font-family:'DM Mono',monospace">${sub.toFixed(2)} €</span>`;
+      modalItens.appendChild(div);
+      });
+      totalAtual = parseFloat((subtotal + ivaTotal).toFixed(2));
+      document.getElementById('modal-recibo').textContent = `#${recibo}`;
+      document.getElementById('modal-total-val').textContent = totalAtual.toFixed(2) + ' €';
+      document.getElementById('valor-recebido').value = '';
+      document.getElementById('troco-val').textContent = '—';
+      document.getElementById('btn-guardar').disabled = true;
+      document.getElementById('overlay').classList.add('show');
+      setTimeout(() => document.getElementById('valor-recebido').focus(), 50);
+      }
 
-                  function fecharModal() { document.getElementById('overlay').classList.remove('show'); }
+      function fecharModal() { document.getElementById('overlay').classList.remove('show'); }
 
-                  function guardarVenda() {
-                    const itens = Object.values(carrinho).map(({ produto, qty, preco }) => ({ id: produto.id, qty, preco }));
-                    fetch('/nova_venda/', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                      body: JSON.stringify({ recibo, itens })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                      if (data.sucesso) {
-                        fecharModal();
-                        mostrarToast(`✓ Venda #${recibo} guardada!`);
-                        setTimeout(() => location.reload(), 1000);
-                      } else {
-                        mostrarToast('Erro: ' + data.erro);
-                      }
-                    })
-                    .catch(() => mostrarToast('Erro ao guardar venda.'));
-                  }
+      function guardarVenda() {
+      const itens = Object.values(carrinho).map(({ produto, qty, preco }) => ({ id: produto.id, qty, preco }));
+      fetch('/nova_venda/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ recibo, itens })
+      })
+      .then(res => res.json())
+      .then(data => {
+      if (data.sucesso) {
+      fecharModal();
+      mostrarToast(`✓ Venda #${recibo} guardada!`);
+      setTimeout(() => location.reload(), 1000);
+      } else {
+      mostrarToast('Erro: ' + data.erro);
+      }
+      })
+      .catch(() => mostrarToast('Erro ao guardar venda.'));
+      }
 
-                  function getCookie(name) {
-                    let cookieValue = null;
-                    if (document.cookie && document.cookie !== '') {
-                      document.cookie.split(';').forEach(cookie => {
-                        const c = cookie.trim();
-                        if (c.startsWith(name + '=')) cookieValue = decodeURIComponent(c.substring(name.length + 1));
-                      });
-                    }
-                    return cookieValue;
-                  }
+      function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+      document.cookie.split(';').forEach(cookie => {
+      const c = cookie.trim();
+      if (c.startsWith(name + '=')) cookieValue = decodeURIComponent(c.substring(name.length + 1));
+      });
+      }
+      return cookieValue;
+      }
 
-                  let toastTimer;
-                  function mostrarToast(msg) {
-                    const t = document.getElementById('toast');
-                    t.textContent = msg;
-                    t.classList.add('show');
-                    clearTimeout(toastTimer);
-                    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
-                  }
+      let toastTimer;
+      function mostrarToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+      }
 
-                  document.getElementById('overlay').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModal(); });
-                  document.getElementById('overlay-editar').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModalEditar(); });
+      document.getElementById('overlay').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModal(); });
+      document.getElementById('overlay-editar').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModalEditar(); });
+      document.getElementById('overlay-ocultar').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModalOcultar();});
 
-                  let totalAtual = 0;
+      let totalAtual = 0;
 
-                  function calcularTroco() {
-                    const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
-                    const troco = recebido - totalAtual;
-                    const trocoEl = document.getElementById('troco-val');
-                    const btnGuardar = document.getElementById('btn-guardar');
-                    if (recebido >= totalAtual) {
-                      trocoEl.textContent = troco.toFixed(2) + ' €';
-                      trocoEl.style.color = 'var(--accent)';
-                      btnGuardar.disabled = false;
-                    } else {
-                      trocoEl.textContent = recebido > 0 ? 'Valor insuficiente' : '—';
-                      trocoEl.style.color = 'var(--danger)';
-                      btnGuardar.disabled = true;
-                    }
-                  }
+      function calcularTroco() {
+      const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
+      const troco = recebido - totalAtual;
+      const trocoEl = document.getElementById('troco-val');
+      const btnGuardar = document.getElementById('btn-guardar');
+      if (recebido >= totalAtual) {
+      trocoEl.textContent = troco.toFixed(2) + ' €';
+      trocoEl.style.color = 'var(--accent)';
+      btnGuardar.disabled = false;
+      } else {
+      trocoEl.textContent = recebido > 0 ? 'Valor insuficiente' : '—';
+      trocoEl.style.color = 'var(--danger)';
+      btnGuardar.disabled = true;
+      }
+      }
 
-                  init();
-    </script>
+      init();
+        </script>
+      </div>
   </body>
 </html>
