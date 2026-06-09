@@ -1,34 +1,123 @@
 # workshop/admin.py
-
 from django.contrib import admin
-from .models import Seccao, Produto, Venda, VendeSe, Loja, Owner 
+from .models import Owner, Loja, Seccao, Fornecedor, Produto, Venda, VendeSe
+
+
+# ── Inlines ────────────────────────────────────────────────────────────────────
+
+class LojaInline(admin.TabularInline):
+    model = Loja
+    extra = 0
+    fields = ('nomeloja', 'localizacao', 'capitalsocial', 'emailloja', 'contacto')
+    show_change_link = True
+
+
+class SeccaoInline(admin.TabularInline):
+    model = Seccao
+    extra = 0
+    fields = ('nome',)
+    show_change_link = True
+
+
+class ProdutoInline(admin.TabularInline):
+    model = Produto
+    extra = 0
+    fields = ('nome', 'preco', 'qtd', 'desconto', 'iva', 'oculto', 'seccao', 'fornecedor')
+    show_change_link = True
+
+
+class VendeSeInline(admin.TabularInline):
+    model = VendeSe
+    extra = 0
+    fields = ('produto', 'qtd', 'preco')
+    autocomplete_fields = ('produto',)
+
+
+# ── ModelAdmins ────────────────────────────────────────────────────────────────
 
 @admin.register(Owner)
 class OwnerAdmin(admin.ModelAdmin):
-    list_display = ('cc', 'name', 'birth', 'email', 'contact')
+    list_display  = ('cc', 'name', 'birth', 'email', 'contact', 'morada', 'loja_count')
     search_fields = ('name', 'email')
+    ordering      = ('name',)
+    inlines       = [LojaInline]
+
+    @admin.display(description='Lojas')
+    def loja_count(self, obj):
+        return obj.lojas.count()
+
 
 @admin.register(Loja)
 class LojaAdmin(admin.ModelAdmin):
-    list_display = ('nomeloja', 'localizacao', 'capitalsocial', 'emailloja', 'contacto', 'owner')
-    search_fields = ('nomeloja',)
+    list_display   = ('nomeloja', 'localizacao', 'capitalsocial', 'emailloja', 'contacto', 'owner')
+    search_fields  = ('nomeloja', 'emailloja', 'owner__name')
+    list_filter    = ('owner',)
+    autocomplete_fields = ('owner',)
+    ordering       = ('nomeloja',)
+    inlines        = [SeccaoInline, ProdutoInline]
+
 
 @admin.register(Seccao)
 class SeccaoAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-    search_fields = ('nome',)
+    list_display  = ('nome', 'loja', 'produto_count')
+    search_fields = ('nome', 'loja__nomeloja')
+    list_filter   = ('loja',)
+    autocomplete_fields = ('loja',)
+    ordering      = ('nome',)
+    inlines       = [ProdutoInline]
+
+    @admin.display(description='Produtos')
+    def produto_count(self, obj):
+        return obj.produtos.count()
+
+
+@admin.register(Fornecedor)
+class FornecedorAdmin(admin.ModelAdmin):
+    list_display  = ('nif', 'nome', 'email', 'contacto', 'morada', 'produto_count')
+    search_fields = ('nome', 'email', 'nif')
+    ordering      = ('nome',)
+
+    @admin.display(description='Produtos')
+    def produto_count(self, obj):
+        return obj.produtos.count()
+
 
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'preco', 'qtd', 'desconto', 'iva', 'seccao')
-    search_fields = ('nome',)
-    list_filter = ('seccao', 'iva')
+    list_display   = ('id', 'nome', 'preco', 'qtd', 'desconto', 'iva', 'oculto', 'seccao', 'loja', 'fornecedor')
+    search_fields  = ('nome', 'seccao__nome', 'loja__nomeloja', 'fornecedor__nome')
+    list_filter    = ('oculto', 'iva', 'seccao', 'loja', 'fornecedor')
+    list_editable  = ('preco', 'qtd', 'oculto')
+    autocomplete_fields = ('seccao', 'loja', 'fornecedor')
+    ordering       = ('nome',)
+    fieldsets = (
+        ('Informação Geral', {
+            'fields': ('nome', 'seccao', 'loja', 'fornecedor', 'oculto')
+        }),
+        ('Preço & Stock', {
+            'fields': ('preco', 'qtd', 'desconto', 'iva')
+        }),
+    )
+
 
 @admin.register(Venda)
 class VendaAdmin(admin.ModelAdmin):
-    list_display = ('recibo', 'total', 'data')
-    list_filter = ('data',)
+    list_display  = ('recibo', 'data', 'total', 'num_produtos')
+    search_fields = ('recibo',)
+    list_filter   = ('data',)
+    date_hierarchy = 'data'
+    ordering      = ('-data',)
+    inlines       = [VendeSeInline]
+
+    @admin.display(description='Nº Produtos')
+    def num_produtos(self, obj):
+        return obj.linhas.count()
+
 
 @admin.register(VendeSe)
 class VendeSeAdmin(admin.ModelAdmin):
-    list_display = ('venda', 'produto', 'qtd', 'preco')
+    list_display   = ('venda', 'produto', 'qtd', 'preco')
+    search_fields  = ('venda__recibo', 'produto__nome')
+    list_filter    = ('produto__seccao', 'produto__loja')
+    autocomplete_fields = ('venda', 'produto')
+    ordering       = ('venda',)

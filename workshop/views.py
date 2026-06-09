@@ -232,6 +232,8 @@ def adicionar_produto(request):
     fornecedores = Fornecedor.objects.all().order_by('nome')
     erro = ''
     sucesso = ''
+    if request.GET.get('sucesso'):
+        sucesso = f'Produto "{request.GET["sucesso"]}" adicionado com sucesso!'
 
     if request.method == 'POST':
         try:
@@ -258,7 +260,7 @@ def adicionar_produto(request):
                     loja=loja,
                     fornecedor=fornecedor,
                 )
-                sucesso = f'Produto "{nome}" adicionado com sucesso!'
+                return redirect(f'/adicionar_produto/?sucesso={nome}')
         except Exception as e:
             erro = f'Erro: {e}'
 
@@ -426,3 +428,25 @@ def ocultar_produto(request, produto_id):
         except Exception as e:
             return JsonResponse({'erro': str(e)}, status=400)
     return JsonResponse({'erro': 'Método não permitido'}, status=405)
+@login_required(login_url='login')
+def get_produto(request, produto_id):
+    loja_nome = request.session.get('loja_atual')
+    produto = get_object_or_404(Produto, id=produto_id)
+    todas_seccoes = list(
+        Seccao.objects.filter(loja__nomeloja=loja_nome).values_list('nome', flat=True)
+    )
+    todos_fornecedores = list(
+        Fornecedor.objects.values_list('nome', flat=True).order_by('nome')
+    )
+    return JsonResponse({
+        'id':                 produto.id,
+        'nome':               produto.nome,
+        'preco':              float(produto.preco),
+        'qtd':                produto.qtd,
+        'desconto':           produto.desconto if produto.desconto is not None else 0,
+        'iva':                produto.iva if produto.iva is not None else 23,
+        'seccao':             str(produto.seccao_id),
+        'fornecedor':         produto.fornecedor.nome if produto.fornecedor else None,
+        'todas_seccoes':      todas_seccoes,
+        'todos_fornecedores': todos_fornecedores,
+    })
