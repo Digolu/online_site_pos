@@ -164,39 +164,41 @@ def lista_vendas(request):
 @login_required(login_url='login')
 def exportar_vendas(request):
     wb = Workbook()
-
-    # remover folha default
     wb.remove(wb.active)
 
     cabecalho = [
         'Recibo',
         'Data',
         'Loja',
-        'Método de Pagamento',
+        'Método Pagamento',
+        'Recebedor',
         'Total (€)',
         'Produto',
         'Quantidade',
         'Preço Unit. (€)',
-        'Subtotal (€)'
+        'Subtotal (€)',
     ]
 
     vendas = Venda.objects.prefetch_related(
-        'linhas__produto__seccao__loja'
+        'linhas__produto__seccao__loja',
+        'contacto'
     ).order_by('-data')
 
     folhas = {}
 
     for venda in vendas:
+        recebedor = '—'
+        if venda.metodo_pagamento == 'mbway' and venda.contacto:
+            recebedor = f'{venda.contacto.nome} ({venda.contacto.telefone})'
+
         for linha in venda.linhas.all():
             loja = linha.produto.seccao.loja
             nome_loja = loja.nomeloja
 
-            # cria a folha se não existir
             if nome_loja not in folhas:
-                ws = wb.create_sheet(title=nome_loja[:31])  # limite Excel
+                ws = wb.create_sheet(title=nome_loja[:31])
                 ws.append(cabecalho)
 
-                # estilo do cabeçalho
                 for col in range(1, len(cabecalho) + 1):
                     cell = ws.cell(row=1, column=col)
                     cell.font = Font(bold=True)
@@ -209,9 +211,10 @@ def exportar_vendas(request):
 
             ws.append([
                 venda.recibo,
-                venda.data.strftime('%d/%m/%Y'),
+                venda.data.strftime('%d/%m/%Y %H:%M'),
                 nome_loja,
                 venda.metodo_pagamento,
+                recebedor,
                 float(venda.total),
                 linha.produto.nome,
                 linha.qtd,
@@ -219,8 +222,7 @@ def exportar_vendas(request):
                 round(float(linha.preco) * linha.qtd, 2),
             ])
 
-    # ajustar largura das colunas em todas as folhas
-    larguras = [10, 15, 20, 20, 12, 25, 12, 16, 14]
+    larguras = [10, 18, 20, 18, 28, 12, 25, 12, 16, 14]
     for ws in folhas.values():
         for i, largura in enumerate(larguras, 1):
             ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
