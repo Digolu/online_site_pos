@@ -103,18 +103,25 @@ class Produto(models.Model):
     class Meta:
         db_table = 'produto'
 
-
 class Venda(models.Model):
+    METODO_CHOICES = [('dinheiro', 'Dinheiro'), ('mbway', 'MBWay')]
+
     recibo = models.BigIntegerField(primary_key=True)
     total = models.BigIntegerField()
     data = models.DateField()
+    metodo_pagamento = models.CharField(max_length=20, choices=METODO_CHOICES, default='dinheiro')
+    contacto = models.ForeignKey(
+        'Contacto',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='vendas'
+    )
 
     def __str__(self):
         return f"Recibo {self.recibo}"
 
     class Meta:
         db_table = 'venda'
-
 
 class VendeSe(models.Model):
     venda = models.ForeignKey(
@@ -138,3 +145,13 @@ class VendeSe(models.Model):
     class Meta:
         db_table = 'vende_se'
         unique_together = [('venda', 'produto')]
+
+class Contacto(models.Model):
+    nome = models.CharField(max_length=512)
+    telefone = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.nome} ({self.telefone})"
+
+    class Meta:
+        db_table = 'contacto'

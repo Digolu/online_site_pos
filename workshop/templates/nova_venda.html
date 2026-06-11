@@ -241,10 +241,25 @@
         <span>Total</span>
         <span class="val" id="modal-total-val"></span>
       </div>
-      <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+
+      <!-- MÉTODO DE PAGAMENTO -->
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button id="btn-metodo-dinheiro" onclick="selecionarMetodo('dinheiro')"
+          style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#0f0f0f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+          💵 Dinheiro
+        </button>
+        <button id="btn-metodo-mbway" onclick="selecionarMetodo('mbway')"
+          style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+          📱 MBWay
+        </button>
+      </div>
+
+      <!-- PAINEL DINHEIRO -->
+      <div id="painel-dinheiro" style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <label style="font-size:13px;color:var(--text-muted)">Valor recebido (€)</label>
-          <input type="number" id="valor-recebido" min="0" step="0.01" placeholder="0.00" oninput="calcularTroco()" autofocus
+          <input type="number" id="valor-recebido" min="0" step="0.01" placeholder="0.00"
+            oninput="calcularTroco()"
             style="background:#111;border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;width:130px;text-align:right;" />
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--border);">
@@ -252,7 +267,39 @@
           <span id="troco-val" style="font-family:'DM Mono',monospace;font-size:18px;color:var(--accent);font-weight:600;">—</span>
         </div>
       </div>
-      <div class="modal-btns">
+
+      <!-- PAINEL MBWAY -->
+      <div id="painel-mbway" style="margin-top:16px;display:none;flex-direction:column;gap:12px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Contacto</label>
+          <select id="select-contacto" onchange="selecionarContacto()"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;">
+            <option value="">— Selecionar contacto —</option>
+          </select>
+        </div>
+        <div id="info-contacto" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:13px;color:var(--text-soft)" id="info-nome"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;color:var(--accent);margin-top:4px" id="info-telefone"></div>
+        </div>
+        <!-- Novo contacto -->
+        <div id="form-novo-contacto" style="display:none;flex-direction:column;gap:8px;border-top:1px solid var(--border);padding-top:12px;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Novo contacto</div>
+          <input type="text" id="novo-contacto-nome" placeholder="Nome"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;" />
+          <input type="tel" id="novo-contacto-tel" placeholder="Telefone"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;" />
+          <button onclick="guardarNovoContacto()"
+            style="padding:9px;background:var(--accent);color:#0f0f0f;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+            Guardar contacto
+          </button>
+        </div>
+        <button onclick="toggleNovoContacto()"
+          style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:8px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;">
+          + Novo contacto
+        </button>
+      </div>
+
+      <div class="modal-btns" style="margin-top:20px;">
         <button class="btn-cancelar-modal" onclick="fecharModal()">Cancelar</button>
         <button class="btn-guardar-modal" id="btn-guardar" onclick="guardarVenda()" disabled>Guardar venda</button>
       </div>
@@ -651,6 +698,103 @@
     }
 
     // ── MODAL VENDA ───────────────────────────────────────────────
+
+    function fecharModal() { document.getElementById('overlay').classList.remove('show'); }
+
+    const contactos = {{ contactos_json|safe }};
+    let metodoAtual = 'dinheiro';
+    let contactoSelecionado = null;
+
+    function selecionarMetodo(metodo) {
+      metodoAtual = metodo;
+      const btnDinheiro = document.getElementById('btn-metodo-dinheiro');
+      const btnMbway = document.getElementById('btn-metodo-mbway');
+      const painelDinheiro = document.getElementById('painel-dinheiro');
+      const painelMbway = document.getElementById('painel-mbway');
+
+      if (metodo === 'dinheiro') {
+        btnDinheiro.style.background = 'var(--accent)';
+        btnDinheiro.style.color = '#0f0f0f';
+        btnDinheiro.style.borderColor = 'var(--accent)';
+        btnMbway.style.background = 'none';
+        btnMbway.style.color = 'var(--text-muted)';
+        btnMbway.style.borderColor = 'var(--border)';
+        painelDinheiro.style.display = 'flex';
+        painelMbway.style.display = 'none';
+        document.getElementById('btn-guardar').disabled =
+          (parseFloat(document.getElementById('valor-recebido').value) || 0) < totalAtual;
+      } else {
+        btnMbway.style.background = 'var(--accent)';
+        btnMbway.style.color = '#0f0f0f';
+        btnMbway.style.borderColor = 'var(--accent)';
+        btnDinheiro.style.background = 'none';
+        btnDinheiro.style.color = 'var(--text-muted)';
+        btnDinheiro.style.borderColor = 'var(--border)';
+        painelDinheiro.style.display = 'none';
+        painelMbway.style.display = 'flex';
+        document.getElementById('btn-guardar').disabled = !contactoSelecionado;
+      }
+    }
+
+    function preencherSelectContactos() {
+      const sel = document.getElementById('select-contacto');
+      sel.innerHTML = '<option value="">— Selecionar contacto —</option>';
+      contactos.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.nome} — ${c.telefone}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function selecionarContacto() {
+      const id = parseInt(document.getElementById('select-contacto').value);
+      const c = contactos.find(x => x.id === id);
+      const infoBox = document.getElementById('info-contacto');
+      if (c) {
+        contactoSelecionado = c;
+        document.getElementById('info-nome').textContent = c.nome;
+        document.getElementById('info-telefone').textContent = c.telefone;
+        infoBox.style.display = 'block';
+        document.getElementById('btn-guardar').disabled = false;
+      } else {
+        contactoSelecionado = null;
+        infoBox.style.display = 'none';
+        document.getElementById('btn-guardar').disabled = true;
+      }
+    }
+
+    function toggleNovoContacto() {
+      const form = document.getElementById('form-novo-contacto');
+      form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function guardarNovoContacto() {
+      const nome = document.getElementById('novo-contacto-nome').value.trim();
+      const telefone = document.getElementById('novo-contacto-tel').value.trim();
+      if (!nome || !telefone) { mostrarToast('Preenche nome e telefone.'); return; }
+      fetch('/criar_contacto/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ nome, telefone })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.sucesso) {
+          contactos.push({ id: data.id, nome: data.nome, telefone: data.telefone });
+          preencherSelectContactos();
+          document.getElementById('select-contacto').value = data.id;
+          selecionarContacto();
+          document.getElementById('novo-contacto-nome').value = '';
+          document.getElementById('novo-contacto-tel').value = '';
+          document.getElementById('form-novo-contacto').style.display = 'none';
+          mostrarToast('✓ Contacto guardado!');
+        } else {
+          mostrarToast('Erro: ' + data.erro);
+        }
+      });
+    }
+
     function abrirModal() {
       const itens = Object.values(carrinho);
       let subtotal = 0, ivaTotal = 0;
@@ -668,21 +812,47 @@
       totalAtual = parseFloat((subtotal + ivaTotal).toFixed(2));
       document.getElementById('modal-recibo').textContent = `#${recibo}`;
       document.getElementById('modal-total-val').textContent = totalAtual.toFixed(2) + ' €';
+      // reset
+      metodoAtual = 'dinheiro';
+      contactoSelecionado = null;
+      selecionarMetodo('dinheiro');
       document.getElementById('valor-recebido').value = '';
       document.getElementById('troco-val').textContent = '—';
       document.getElementById('btn-guardar').disabled = true;
+      document.getElementById('info-contacto').style.display = 'none';
+      document.getElementById('form-novo-contacto').style.display = 'none';
+      preencherSelectContactos();
       document.getElementById('overlay').classList.add('show');
       setTimeout(() => document.getElementById('valor-recebido').focus(), 50);
     }
 
-    function fecharModal() { document.getElementById('overlay').classList.remove('show'); }
+    function calcularTroco() {
+      const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
+      const troco = recebido - totalAtual;
+      const trocoEl = document.getElementById('troco-val');
+      const btnGuardar = document.getElementById('btn-guardar');
+      if (recebido >= totalAtual) {
+        trocoEl.textContent = troco.toFixed(2) + ' €';
+        trocoEl.style.color = 'var(--accent)';
+        btnGuardar.disabled = false;
+      } else {
+        trocoEl.textContent = recebido > 0 ? 'Valor insuficiente' : '—';
+        trocoEl.style.color = 'var(--danger)';
+        btnGuardar.disabled = true;
+      }
+    }
 
     function guardarVenda() {
       const itens = Object.values(carrinho).map(({ produto, qty, preco }) => ({ id: produto.id, qty, preco }));
       fetch('/nova_venda/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify({ recibo, itens })
+        body: JSON.stringify({
+          recibo,
+          itens,
+          metodo_pagamento: metodoAtual,
+          contacto_id: contactoSelecionado ? contactoSelecionado.id : null,
+        })
       })
       .then(res => res.json())
       .then(data => {
@@ -721,23 +891,6 @@
     document.getElementById('overlay-editar').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModalEditar(); });
     document.getElementById('overlay-ocultar').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModalOcultar(); });
 
-    let totalAtual = 0;
-
-    function calcularTroco() {
-      const recebido = parseFloat(document.getElementById('valor-recebido').value) || 0;
-      const troco = recebido - totalAtual;
-      const trocoEl = document.getElementById('troco-val');
-      const btnGuardar = document.getElementById('btn-guardar');
-      if (recebido >= totalAtual) {
-        trocoEl.textContent = troco.toFixed(2) + ' €';
-        trocoEl.style.color = 'var(--accent)';
-        btnGuardar.disabled = false;
-      } else {
-        trocoEl.textContent = recebido > 0 ? 'Valor insuficiente' : '—';
-        trocoEl.style.color = 'var(--danger)';
-        btnGuardar.disabled = true;
-      }
-    }
 
     init();
   </script>

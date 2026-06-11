@@ -1,6 +1,6 @@
 # workshop/admin.py
 from django.contrib import admin
-from .models import Owner, Loja, Seccao, Fornecedor, Produto, Venda, VendeSe
+from .models import Owner, Loja, Seccao, Fornecedor, Produto, Venda, VendeSe, Contacto
 
 
 # ── Inlines ────────────────────────────────────────────────────────────────────
@@ -99,20 +99,44 @@ class ProdutoAdmin(admin.ModelAdmin):
         }),
     )
 
-
 @admin.register(Venda)
 class VendaAdmin(admin.ModelAdmin):
-    list_display  = ('recibo', 'data', 'total', 'num_produtos')
+    list_display  = (
+        'recibo',
+        'data',
+        'total',
+        'metodo_pagamento_admin',
+        'num_produtos',
+    )
     search_fields = ('recibo',)
-    list_filter   = ('data',)
+    list_filter   = ('data', 'metodo_pagamento')
     date_hierarchy = 'data'
     ordering      = ('-data',)
     inlines       = [VendeSeInline]
+    actions       = ['apagar_vendas']
+
+    @admin.display(description='Pagamento')
+    def metodo_pagamento_admin(self, obj):
+        if obj.metodo_pagamento == 'mbway':
+            if obj.contacto:
+                return f'📱 MBWay · {obj.contacto.nome} ({obj.contacto.telefone})'
+            return '📱 MBWay'
+        return '💵 Dinheiro'
 
     @admin.display(description='Nº Produtos')
     def num_produtos(self, obj):
         return obj.linhas.count()
 
+    @admin.action(description='Apagar vendas selecionadas (com linhas)')
+    def apagar_vendas(self, request, queryset):
+        for venda in queryset:
+            venda.linhas.all().delete()
+            venda.delete()
+        self.message_user(request, f'{queryset.count()} venda(s) apagada(s).')
+
+    @admin.display(description='Nº Produtos')
+    def num_produtos(self, obj):
+        return obj.linhas.count()
 
 @admin.register(VendeSe)
 class VendeSeAdmin(admin.ModelAdmin):
@@ -121,3 +145,9 @@ class VendeSeAdmin(admin.ModelAdmin):
     list_filter    = ('produto__seccao', 'produto__loja')
     autocomplete_fields = ('venda', 'produto')
     ordering       = ('venda',)
+
+
+@admin.register(Contacto)
+class ContactoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'telefone')
+    search_fields = ('nome', 'telefone')

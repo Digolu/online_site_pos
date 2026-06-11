@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Produto, Seccao, Venda, VendeSe, Loja, Owner, Fornecedor    
+from .models import Produto, Seccao, Venda, VendeSe, Loja, Owner, Fornecedor, Contacto
 from django.shortcuts import render, redirect, get_object_or_404
 
 
@@ -23,7 +23,6 @@ def vendasTESTEFUNC(request):
     vendas = Venda.objects.all()
     return render(request, 'vendasTESTE.html', {'vendas': vendas})
 
-
 def nova_venda(request):
     loja_nome = request.session.get('loja_atual')
     if not loja_nome:
@@ -34,10 +33,19 @@ def nova_venda(request):
         itens = dados.get('itens', [])
         total = sum(item['preco'] * item['qty'] for item in itens)
         recibo = dados.get('recibo')
+        metodo = dados.get('metodo_pagamento', 'dinheiro')
+        contacto_id = dados.get('contacto_id')
+
+        contacto = None
+        if metodo == 'mbway' and contacto_id:
+            contacto = Contacto.objects.filter(id=contacto_id).first()
+
         venda = Venda.objects.create(
             recibo=recibo,
             total=round(total, 2),
-            data=datetime.datetime.now()
+            data=datetime.datetime.now(),
+            metodo_pagamento=metodo,
+            contacto=contacto,
         )
         for item in itens:
             produto = Produto.objects.get(id=item['id'])
@@ -51,12 +59,12 @@ def nova_venda(request):
             produto.save()
         return JsonResponse({'sucesso': True, 'recibo': recibo})
 
-    # GET — só produtos das secções desta loja
+    # GET
     ultima_venda = Venda.objects.order_by('-recibo').first()
     proximo_recibo = (ultima_venda.recibo + 1) if ultima_venda else 1001
 
     produtos_lista = []
-    for p in Produto.objects.filter(loja__nomeloja=loja_nome, oculto=False):
+    for p in Produto.objects.filter(loja__nomeloja=loja_nome, oculto=False).order_by('id'):
         produtos_lista.append({
             'id': p.id,
             'nome': p.nome,
@@ -68,14 +76,33 @@ def nova_venda(request):
             'fornecedor': p.fornecedor.nome if p.fornecedor else None,
         })
 
+    contactos = list(Contacto.objects.values('id', 'nome', 'telefone').order_by('nome'))
+
     return render(request, 'nova_venda.html', {
         'produtos_json': json.dumps(produtos_lista),
+        'contactos_json': json.dumps(contactos),
         'proximo_recibo': proximo_recibo,
         'loja_atual': loja_nome,
     })
 
-@login_required(login_url='login')
 
+@login_required(login_url='login')
+def criar_contacto(request):
+    if request.method == 'POST':
+        try:
+            dados = json.loads(request.body)
+            nome = dados.get('nome', '').strip()
+            telefone = dados.get('telefone', '').strip()
+            if not nome or not telefone:
+                return JsonResponse({'erro': 'Nome e telefone são obrigatórios.'}, status=400)
+            contacto = Contacto.objects.create(nome=nome, telefone=telefone)
+            return JsonResponse({'sucesso': True, 'id': contacto.id, 'nome': contacto.nome, 'telefone': contacto.telefone})
+        except Exception as e:
+            return JsonResponse({'erro': str(e)}, status=400)
+    return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
+
+@login_required(login_url='login')
 def home(request):
     lojas = Loja.objects.select_related('owner').all()
     owners = Owner.objects.all() 
@@ -134,57 +161,74 @@ def lista_vendas(request):
     })
 # para exportar as vendas para CSV
 
-
 @login_required(login_url='login')
 def exportar_vendas(request):
     wb = Workbook()
-    ws = wb.active
-    ws.title = "Vendas"
 
-    # ── CABEÇALHO ──
-    cabecalho = ['Recibo', 'Data', 'Total (€)', 'Produto', 'Quantidade', 'Preço Unit. (€)', 'Subtotal (€)']
-    ws.append(cabecalho)
+    # remover folha default
+    wb.remove(wb.active)
 
-    # estilo do cabeçalho
-    for col in range(1, len(cabecalho) + 1):
-        cell = ws.cell(row=1, column=col)
-        cell.font = Font(bold=True, color='000000')
-        cell.fill = PatternFill(start_color='C8F060', end_color='C8F060', fill_type='solid')
-        cell.alignment = Alignment(horizontal='center')
+    cabecalho = [
+        'Recibo',
+        'Data',
+        'Loja',
+        'Método de Pagamento',
+        'Total (€)',
+        'Produto',
+        'Quantidade',
+        'Preço Unit. (€)',
+        'Subtotal (€)'
+    ]
 
-    # ── DADOS ──
-    vendas = Venda.objects.all().order_by('-data')
+    vendas = Venda.objects.prefetch_related(
+        'linhas__produto__seccao__loja'
+    ).order_by('-data')
+
+    folhas = {}
+
     for venda in vendas:
-        linhas = venda.linhas.all()
-        if linhas:
-            for linha in linhas:
-                ws.append([
-                    venda.recibo,
-                    venda.data.strftime('%d/%m/%Y'),                    
-                    float(venda.total),
-                    linha.produto.nome,
-                    linha.qtd,
-                    float(linha.preco),
-                    round(float(linha.preco) * linha.qtd, 2),
-                ])
-        else:
+        for linha in venda.linhas.all():
+            loja = linha.produto.seccao.loja
+            nome_loja = loja.nomeloja
+
+            # cria a folha se não existir
+            if nome_loja not in folhas:
+                ws = wb.create_sheet(title=nome_loja[:31])  # limite Excel
+                ws.append(cabecalho)
+
+                # estilo do cabeçalho
+                for col in range(1, len(cabecalho) + 1):
+                    cell = ws.cell(row=1, column=col)
+                    cell.font = Font(bold=True)
+                    cell.fill = PatternFill(start_color='C8F060', end_color='C8F060', fill_type='solid')
+                    cell.alignment = Alignment(horizontal='center')
+
+                folhas[nome_loja] = ws
+
+            ws = folhas[nome_loja]
+
             ws.append([
                 venda.recibo,
-                venda.data.strftime('%d/%m/%Y %H:%M'),
+                venda.data.strftime('%d/%m/%Y'),
+                nome_loja,
+                venda.metodo_pagamento,
                 float(venda.total),
-                '-', '-', '-', '-'
+                linha.produto.nome,
+                linha.qtd,
+                float(linha.preco),
+                round(float(linha.preco) * linha.qtd, 2),
             ])
 
-    # ── LARGURA DAS COLUNAS ──
-    larguras = [10, 18, 12, 25, 12, 16, 14]
-    for i, largura in enumerate(larguras, 1):
-        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
+    # ajustar largura das colunas em todas as folhas
+    larguras = [10, 15, 20, 20, 12, 25, 12, 16, 14]
+    for ws in folhas.values():
+        for i, largura in enumerate(larguras, 1):
+            ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
 
-    # ── RESPOSTA ──
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="vendas.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="vendas_por_loja.xlsx"'
     wb.save(response)
     return response
 
