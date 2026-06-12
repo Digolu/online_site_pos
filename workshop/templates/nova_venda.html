@@ -842,30 +842,29 @@
       }
     }
 
-    function guardarVenda() {
-      const itens = Object.values(carrinho).map(({ produto, qty, preco }) => ({ id: produto.id, qty, preco }));
-      fetch('/nova_venda/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify({
-          recibo,
-          itens,
-          metodo_pagamento: metodoAtual,
-          contacto_id: contactoSelecionado ? contactoSelecionado.id : null,
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.sucesso) {
-          fecharModal();
-          mostrarToast(`✓ Venda #${recibo} guardada!`);
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          mostrarToast('Erro: ' + data.erro);
-        }
-      })
-      .catch(() => mostrarToast('Erro ao guardar venda.'));
+function guardarVenda() {
+  const itens = Object.values(carrinho).map(({ produto, qty, preco }) => ({ id: produto.id, qty, preco }));
+  fetch('/nova_venda/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({
+      itens,
+      metodo_pagamento: metodoAtual,
+      contacto_id: contactoSelecionado ? contactoSelecionado.id : null,
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.sucesso) {
+      fecharModal();
+      mostrarToast(`✓ Venda #${data.recibo} guardada!`);
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      mostrarToast('Erro: ' + data.erro);
     }
+  })
+  .catch(() => mostrarToast('Erro ao guardar venda.'));
+}
 
     function getCookie(name) {
       let cookieValue = null;

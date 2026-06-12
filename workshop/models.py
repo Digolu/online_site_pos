@@ -105,10 +105,9 @@ class Produto(models.Model):
 
 class Venda(models.Model):
     METODO_CHOICES = [('dinheiro', 'Dinheiro'), ('mbway', 'MBWay')]
-
     recibo = models.BigIntegerField(primary_key=True)
-    total = models.BigIntegerField()
-    data = models.DateField()
+    total = models.FloatField()          # ← era BigIntegerField
+    data = models.DateTimeField()        # ← era DateField, perdes a hora!
     metodo_pagamento = models.CharField(max_length=20, choices=METODO_CHOICES, default='dinheiro')
     contacto = models.ForeignKey(
         'Contacto',
@@ -124,20 +123,10 @@ class Venda(models.Model):
         db_table = 'venda'
 
 class VendeSe(models.Model):
-    venda = models.ForeignKey(
-        Venda,
-        on_delete=models.RESTRICT,
-        db_column='venda_recibo',
-        related_name='linhas'
-    )
-    produto = models.ForeignKey(
-        Produto,
-        on_delete=models.RESTRICT,
-        db_column='produto_id',
-        related_name='linhas_venda'
-    )
+    venda = models.ForeignKey(Venda, on_delete=models.RESTRICT, db_column='venda_recibo', related_name='linhas')
+    produto = models.ForeignKey(Produto, on_delete=models.RESTRICT, db_column='produto_id', related_name='linhas_venda')
     qtd = models.IntegerField()
-    preco = models.IntegerField()
+    preco = models.FloatField()
 
     def __str__(self):
         return f"Venda {self.venda_id} — Produto {self.produto_id}"

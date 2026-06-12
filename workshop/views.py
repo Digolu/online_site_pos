@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from .models import Produto, Seccao, Venda, VendeSe, Loja, Owner, Fornecedor, Contacto
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db import transaction
 
 
 
@@ -29,36 +30,47 @@ def nova_venda(request):
         return redirect('home')
 
     if request.method == 'POST':
-        dados = json.loads(request.body)
-        itens = dados.get('itens', [])
-        total = sum(item['preco'] * item['qty'] for item in itens)
-        recibo = dados.get('recibo')
-        metodo = dados.get('metodo_pagamento', 'dinheiro')
-        contacto_id = dados.get('contacto_id')
+        try:
+            with transaction.atomic():
+                dados = json.loads(request.body)
+                itens = dados.get('itens', [])
+                metodo = dados.get('metodo_pagamento', 'dinheiro')
+                contacto_id = dados.get('contacto_id')
 
-        contacto = None
-        if metodo == 'mbway' and contacto_id:
-            contacto = Contacto.objects.filter(id=contacto_id).first()
+                # Recibo gerado no servidor, de forma segura
+                ultima_venda = Venda.objects.select_for_update().order_by('-recibo').first()
+                recibo = (ultima_venda.recibo + 1) if ultima_venda else 1001
 
-        venda = Venda.objects.create(
-            recibo=recibo,
-            total=round(total, 2),
-            data=datetime.datetime.now(),
-            metodo_pagamento=metodo,
-            contacto=contacto,
-        )
-        for item in itens:
-            produto = Produto.objects.get(id=item['id'])
-            if produto.qtd < item['qty']:
-                return JsonResponse({'erro': f'Stock insuficiente para {produto.nome}'}, status=400)
-            VendeSe.objects.create(
-                venda=venda, produto=produto,
-                qtd=item['qty'], preco=item['preco']
-            )
-            produto.qtd -= item['qty']
-            produto.save()
-        return JsonResponse({'sucesso': True, 'recibo': recibo})
+                total = sum(item['preco'] * item['qty'] for item in itens)
 
+                contacto = None
+                if metodo == 'mbway' and contacto_id:
+                    contacto = Contacto.objects.filter(id=contacto_id).first()
+
+                venda = Venda.objects.create(
+                    recibo=recibo,
+                    total=round(total, 2),
+                    data=datetime.datetime.now(),
+                    metodo_pagamento=metodo,
+                    contacto=contacto,
+                )
+                for item in itens:
+                    produto = Produto.objects.get(id=item['id'])
+                    VendeSe.objects.create(
+                        venda=venda, produto=produto,
+                        qtd=item['qty'], preco=item['preco']
+                    )
+                    produto.qtd -= item['qty']
+                    produto.save()
+
+                return JsonResponse({'sucesso': True, 'recibo': recibo})
+
+        except Exception as e:
+            import traceback
+            print(f"ERRO NOVA_VENDA: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({'erro': str(e)}, status=500)
+    
     # GET
     ultima_venda = Venda.objects.order_by('-recibo').first()
     proximo_recibo = (ultima_venda.recibo + 1) if ultima_venda else 1001
