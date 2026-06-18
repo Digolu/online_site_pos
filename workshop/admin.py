@@ -1,6 +1,6 @@
 # workshop/admin.py
 from django.contrib import admin
-from .models import Owner, Loja, Seccao, Fornecedor, Produto, Venda, VendeSe, Contacto
+from .models import Owner, Loja, Seccao, Fornecedor, Produto, Venda, VendeSe, Contacto, Evento
 
 
 # ── Inlines ────────────────────────────────────────────────────────────────────
@@ -49,9 +49,10 @@ class OwnerAdmin(admin.ModelAdmin):
 
 @admin.register(Loja)
 class LojaAdmin(admin.ModelAdmin):
-    list_display   = ('nomeloja', 'localizacao', 'capitalsocial', 'emailloja', 'contacto', 'owner')
+    list_display   = ('nomeloja', 'localizacao', 'capitalsocial', 'emailloja', 'contacto', 'owner', 'oculta')
     search_fields  = ('nomeloja', 'emailloja', 'owner__name')
-    list_filter    = ('owner',)
+    list_filter    = ('owner', 'oculta')
+    list_editable  = ('oculta',)
     autocomplete_fields = ('owner',)
     ordering       = ('nomeloja',)
     inlines        = [SeccaoInline, ProdutoInline]
@@ -146,6 +147,13 @@ class VendeSeAdmin(admin.ModelAdmin):
     autocomplete_fields = ('venda', 'produto')
     ordering       = ('venda',)
 
+@admin.register(Evento)
+class EventoAdmin(admin.ModelAdmin):
+    list_display  = ('nome', 'loja', 'data_inicio', 'data_fim', 'ativo')
+    list_filter   = ('loja', 'ativo')
+    list_editable = ('ativo',)
+    ordering      = ('loja', '-data_inicio')
+    fields        = ('nome', 'loja', 'data_inicio', 'data_fim', 'ativo')
 
 @admin.register(Contacto)
 class ContactoAdmin(admin.ModelAdmin):

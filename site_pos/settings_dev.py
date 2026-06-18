@@ -12,3 +12,7 @@ DATABASES = {
 
 ## correr localmente com:
 #python manage.py runserver --settings=site_pos.settings_dev
+
+     
+##python manage.py makemigrations --settings=site_pos.settings_dev
+##python manage.py migrate --settings=site_pos.settings_dev       

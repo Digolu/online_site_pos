@@ -23,6 +23,7 @@ class Loja(models.Model):
     capitalsocial = models.IntegerField()
     emailloja = models.CharField(max_length=512)
     contacto = models.IntegerField()
+    oculta = models.BooleanField(default=False)    
     owner = models.ForeignKey(
         Owner,
         on_delete=models.RESTRICT,
@@ -115,6 +116,12 @@ class Venda(models.Model):
         null=True, blank=True,
         related_name='vendas'
     )
+    evento = models.ForeignKey(
+        'Evento',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='vendas'
+    )
 
     def __str__(self):
         return f"Recibo {self.recibo}"
@@ -144,3 +151,25 @@ class Contacto(models.Model):
 
     class Meta:
         db_table = 'contacto'
+
+
+class Evento(models.Model):
+    nome        = models.CharField(max_length=100)
+    data_inicio = models.DateField()
+    data_fim    = models.DateField(null=True, blank=True)
+    ativo       = models.BooleanField(default=False)
+    loja        = models.ForeignKey(Loja, on_delete=models.CASCADE, related_name='eventos')
+
+    def __str__(self):
+        return f"{self.nome} ({self.loja.nomeloja})"
+
+    def save(self, *args, **kwargs):
+        # Garante que só existe um evento ativo por loja
+        if self.ativo:
+            Evento.objects.filter(loja=self.loja, ativo=True).exclude(pk=self.pk).update(ativo=False)
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['-data_inicio']
+        verbose_name = 'Evento'
+        verbose_name_plural = 'Eventos'

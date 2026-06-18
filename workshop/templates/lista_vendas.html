@@ -20,18 +20,13 @@
         --text-soft: #b0ada8;
         --danger: #ff5f5f;
       }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
         font-family: "DM Sans", sans-serif;
         background: var(--bg);
         color: var(--text);
         min-height: 100vh;
       }
-
       header {
         padding: 20px 32px;
         border-bottom: 1px solid var(--border);
@@ -52,18 +47,9 @@
         font-size: 13px;
         transition: color 0.15s;
       }
-      .back-btn:hover {
-        color: var(--accent);
-      }
-      header .sep {
-        color: var(--border);
-        font-size: 20px;
-      }
-      header h1 {
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--text-soft);
-      }
+      .back-btn:hover { color: var(--accent); }
+      header .sep { color: var(--border); font-size: 20px; }
+      header h1 { font-size: 15px; font-weight: 500; color: var(--text-soft); }
       .total-badge {
         margin-left: auto;
         font-family: "DM Mono", monospace;
@@ -83,23 +69,15 @@
         border-radius: 20px;
         transition: all 0.15s;
       }
-      .logout-btn:hover {
-        background: var(--danger);
-        color: #0f0f0f;
-      }
+      .logout-btn:hover { background: var(--danger); color: #0f0f0f; }
+      main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
 
-      main {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 32px 24px;
-      }
-
-      /* filtro de data */
+      /* filtros */
       .filtros-bar {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
         flex-wrap: wrap;
       }
       .filtros-bar label {
@@ -108,7 +86,8 @@
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
-      .filtros-bar input[type="date"] {
+      .filtros-bar input[type="date"],
+      .filtros-bar select {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 10px;
@@ -119,9 +98,9 @@
         outline: none;
         transition: border-color 0.2s;
       }
-      .filtros-bar input[type="date"]:focus {
-        border-color: var(--accent);
-      }
+      .filtros-bar input[type="date"]:focus,
+      .filtros-bar select:focus { border-color: var(--accent); }
+      .filtros-bar select option { background: var(--surface2); }
       .btn-filtrar {
         padding: 8px 18px;
         background: var(--accent);
@@ -134,9 +113,7 @@
         cursor: pointer;
         transition: all 0.15s;
       }
-      .btn-filtrar:hover {
-        background: #d8ff70;
-      }
+      .btn-filtrar:hover { background: #d8ff70; }
       .btn-limpar-filtro {
         padding: 8px 18px;
         background: none;
@@ -148,12 +125,20 @@
         cursor: pointer;
         transition: all 0.15s;
       }
-      .btn-limpar-filtro:hover {
-        color: var(--text);
-        border-color: var(--text-muted);
+      .btn-limpar-filtro:hover { color: var(--text); border-color: var(--text-muted); }
+
+      /* evento badge na venda */
+      .venda-evento {
+        font-size: 11px;
+        color: var(--text-muted);
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-family: "DM Mono", monospace;
       }
 
-      /* cards de venda */
+      /* cards */
       .venda-card {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -162,15 +147,14 @@
         overflow: hidden;
         transition: border-color 0.15s;
       }
-      .venda-card:hover {
-        border-color: #3e3e3e;
-      }
+      .venda-card:hover { border-color: #3e3e3e; }
       .venda-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 18px 22px;
         gap: 16px;
+        flex-wrap: wrap;
       }
       .venda-recibo {
         font-family: "DM Mono", monospace;
@@ -178,10 +162,7 @@
         color: var(--accent);
         font-weight: 500;
       }
-      .venda-data {
-        font-size: 13px;
-        color: var(--text-muted);
-      }
+      .venda-data { font-size: 13px; color: var(--text-muted); }
       .venda-total {
         font-family: "DM Mono", monospace;
         font-size: 15px;
@@ -189,11 +170,7 @@
         color: var(--text);
         margin-left: auto;
       }
-      .venda-acoes {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+      .venda-acoes { display: flex; align-items: center; gap: 8px; }
       .btn-expandir {
         background: none;
         border: none;
@@ -203,26 +180,7 @@
         transition: transform 0.2s;
         padding: 4px 8px;
       }
-      .btn-expandir.aberto {
-        transform: rotate(180deg);
-      }
-      .btn-apagar {
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--danger);
-        border-radius: 8px;
-        padding: 5px 12px;
-        font-size: 12px;
-        cursor: pointer;
-        font-family: "DM Sans", sans-serif;
-        transition: all 0.15s;
-      }
-      .btn-apagar:hover {
-        background: var(--danger);
-        color: #0f0f0f;
-        border-color: var(--danger);
-      }
-
+      .btn-expandir.aberto { transform: rotate(180deg); }
       .venda-linhas {
         display: none;
         border-top: 1px solid var(--border);
@@ -230,9 +188,7 @@
         flex-direction: column;
         gap: 8px;
       }
-      .venda-linhas.aberto {
-        display: flex;
-      }
+      .venda-linhas.aberto { display: flex; }
       .linha-item {
         display: flex;
         justify-content: space-between;
@@ -241,12 +197,8 @@
         padding: 8px 0;
         border-bottom: 1px solid var(--border);
       }
-      .linha-item:last-child {
-        border-bottom: none;
-      }
-      .linha-nome {
-        color: var(--text-soft);
-      }
+      .linha-item:last-child { border-bottom: none; }
+      .linha-nome { color: var(--text-soft); }
       .linha-qty {
         font-family: "DM Mono", monospace;
         font-size: 12px;
@@ -266,72 +218,6 @@
         color: var(--text-muted);
         font-size: 14px;
       }
-
-      /* modal apagar */
-      .overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 50;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(4px);
-      }
-      .overlay.show {
-        display: flex;
-      }
-      .modal {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 32px;
-        max-width: 360px;
-        width: 90%;
-      }
-      .modal h3 {
-        font-size: 18px;
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
-      .modal p {
-        font-size: 14px;
-        color: var(--text-muted);
-        line-height: 1.6;
-        margin-bottom: 24px;
-      }
-      .modal-btns {
-        display: flex;
-        gap: 10px;
-      }
-      .modal-btns button {
-        flex: 1;
-        padding: 12px;
-        border-radius: 10px;
-        font-family: "DM Sans", sans-serif;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s;
-      }
-      .btn-cancelar {
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-      }
-      .btn-cancelar:hover {
-        color: var(--text);
-      }
-      .btn-confirmar-apagar {
-        background: var(--danger);
-        border: none;
-        color: #fff;
-        font-weight: 600;
-      }
-      .btn-confirmar-apagar:hover {
-        background: #ff3333;
-      }
-
       .export-btn {
         font-size: 12px;
         color: var(--accent);
@@ -341,7 +227,8 @@
         border-radius: 20px;
         transition: all 0.15s;
       }
-      .limpar-btn {
+      .export-btn:hover { background: var(--accent); color: #0f0f0f; }
+      .logout-btn {
         font-size: 12px;
         color: var(--danger);
         text-decoration: none;
@@ -350,29 +237,13 @@
         border-radius: 20px;
         transition: all 0.15s;
       }
-
-      .limpar-btn:hover {
-        background: var(--danger);
-        color: #fff;
-      }
-
-      .export-btn:hover {
-        background: var(--accent);
-        color: #0f0f0f;
-      }
+      .logout-btn:hover { background: var(--danger); color: #0f0f0f; }
     </style>
   </head>
   <body>
     <header>
       <a href="/" class="back-btn">
-        <svg
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M19 12H5M12 5l-7 7 7 7" />
         </svg>
         Voltar
@@ -380,152 +251,89 @@
       <span class="sep">›</span>
       <h1>Lista de Vendas</h1>
       <span class="total-badge">{{ vendas|length }} venda(s)</span>
-      <a href="/exportar_vendas/" class="export-btn">⬇ Exportar Excel</a>
-      <!-- <a href="/limpar_vendas/" class="limpar-btn">🗑 Limpar tudo</a>  botao de apagar os registos de vendas -->
+      <!-- Link de exportação preserva o filtro de evento ativo -->
+      <a href="/exportar_vendas/{% if evento_filtro %}?evento={{ evento_filtro }}{% endif %}" class="export-btn">⬇ Exportar Excel</a>
       <a href="/logout/" class="logout-btn">Sair</a>
     </header>
 
     <main>
-      <!-- FILTRO DE DATA -->
+      <!-- FILTROS -->
       <form method="GET" class="filtros-bar">
-        <label>Filtrar por data</label>
+        <label>Data</label>
         <input type="date" name="data" value="{{ data_filtro }}" />
+
+        <label>Evento</label>
+        <select name="evento">
+          <option value="">Todos</option>
+          {% for ev in eventos %}
+            <option value="{{ ev.id }}" {% if evento_filtro == ev.id|stringformat:"s" %}selected{% endif %}>
+              {{ ev.nome }}{% if ev.ativo %} ●{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+
         <button type="submit" class="btn-filtrar">Filtrar</button>
-        {% if data_filtro %}
-        <a href="/lista_vendas/"
-          ><button type="button" class="btn-limpar-filtro">
-            Limpar filtro
-          </button></a
-        >
+
+        {% if data_filtro or evento_filtro %}
+          <a href="/lista_vendas/">
+            <button type="button" class="btn-limpar-filtro">Limpar filtros</button>
+          </a>
         {% endif %}
       </form>
 
-{% if vendas %}
-  {% for venda in vendas %}
-    <div class="venda-card">
+      <!-- VENDAS -->
+      {% if vendas %}
+        {% for venda in vendas %}
+          <div class="venda-card">
+            <div class="venda-header">
+              <span class="venda-recibo">#{{ venda.recibo }}</span>
+              <span class="venda-data">{{ venda.data|date:"d/m/Y H:i" }}</span>
 
-      <div class="venda-header">
-        <span class="venda-recibo">#{{ venda.recibo }}</span>
-
-        <span class="venda-data">
-          {{ venda.data|date:"d/m/Y" }}
-        </span>
-
-        <span class="venda-total">
-          {{ venda.total|floatformat:2 }} €
-        </span>
-
-        <span class="venda-data">
-          {% if venda.metodo_pagamento == 'mbway' %}
-            📱 MBWay
-            {% if venda.contacto %}
-              · {{ venda.contacto.nome }} ({{ venda.contacto.telefone }})
-            {% endif %}
-          {% else %}
-            💵 Dinheiro
-          {% endif %}
-        </span>
-
-        <div class="venda-acoes">
-          <button
-            class="btn-expandir"
-            id="toggle-{{ venda.recibo }}"
-            onclick="toggleVenda({{ venda.recibo }})"
-          >
-            ▾
-          </button>
-        </div>
-      </div>
-
-      <div class="venda-linhas" id="linhas-{{ venda.recibo }}">
-        {% for linha in venda.linhas.all %}
-          <div class="linha-item">
-            <span class="linha-nome">
-              {{ linha.produto.nome }}
-              {% if linha.produto.fornecedor %}
-                <span style="font-size:11px;color:var(--text-muted);display:block;">
-                  🏭 {{ linha.produto.fornecedor.nome }}
-                </span>
+              {% if venda.evento %}
+                <span class="venda-evento">{{ venda.evento.nome }}</span>
               {% endif %}
-            </span>
 
-            <span class="linha-qty">× {{ linha.qtd }}</span>
+              <span class="venda-total">{{ venda.total|floatformat:2 }} €</span>
 
-            <span class="linha-preco">
-              {{ linha.preco|floatformat:2 }} €
-            </span>
+              <span class="venda-data">
+                {% if venda.metodo_pagamento == 'mbway' %}
+                  📱 MBWay
+                  {% if venda.contacto %} · {{ venda.contacto.nome }} ({{ venda.contacto.telefone }}){% endif %}
+                {% else %}
+                  💵 Dinheiro
+                {% endif %}
+              </span>
+
+              <div class="venda-acoes">
+                <button class="btn-expandir" id="toggle-{{ venda.recibo }}" onclick="toggleVenda({{ venda.recibo }})">▾</button>
+              </div>
+            </div>
+
+            <div class="venda-linhas" id="linhas-{{ venda.recibo }}">
+              {% for linha in venda.linhas.all %}
+                <div class="linha-item">
+                  <span class="linha-nome">
+                    {{ linha.produto.nome }}
+                    {% if linha.produto.fornecedor %}
+                      <span style="font-size:11px;color:var(--text-muted);display:block;">🏭 {{ linha.produto.fornecedor.nome }}</span>
+                    {% endif %}
+                  </span>
+                  <span class="linha-qty">× {{ linha.qtd }}</span>
+                  <span class="linha-preco">{{ linha.preco|floatformat:2 }} €</span>
+                </div>
+              {% endfor %}
+            </div>
           </div>
         {% endfor %}
-      </div>
-
-    </div>
-  {% endfor %}
-{% else %}
-  <div class="vazio">Nenhuma venda encontrada.</div>
-{% endif %}
+      {% else %}
+        <div class="vazio">Nenhuma venda encontrada.</div>
+      {% endif %}
+    </main>
 
     <script>
       function toggleVenda(recibo) {
         document.getElementById("linhas-" + recibo).classList.toggle("aberto");
         document.getElementById("toggle-" + recibo).classList.toggle("aberto");
-      }
-
-      // codigo 12/4
-
-      let totalAtual = 0;
-
-      function abrirModal() {
-        const itens = Object.values(carrinho);
-        let subtotal = 0,
-          ivaTotal = 0;
-
-        const modalItens = document.getElementById("modal-itens");
-        modalItens.innerHTML = "";
-
-        itens.forEach(({ produto, qty, preco }) => {
-          const sub = preco * qty;
-          const iva = sub * (produto.iva / 100);
-          subtotal += sub;
-          ivaTotal += iva;
-
-          const div = document.createElement("div");
-          div.className = "modal-item";
-          div.innerHTML = `
-      <span>${produto.nome} × ${qty}</span>
-      <span style="font-family:'DM Mono',monospace">${sub.toFixed(2)} €</span>
-    `;
-          modalItens.appendChild(div);
-        });
-
-        totalAtual = parseFloat((subtotal + ivaTotal).toFixed(2));
-        document.getElementById("modal-recibo").textContent = `#${recibo}`;
-        document.getElementById("modal-total-val").textContent =
-          totalAtual.toFixed(2) + " €";
-
-        // reset do troco
-        document.getElementById("valor-recebido").value = "";
-        document.getElementById("troco-val").textContent = "—";
-        document.getElementById("btn-guardar").disabled = true;
-
-        document.getElementById("overlay").classList.add("show");
-      }
-
-      function calcularTroco() {
-        const recebido =
-          parseFloat(document.getElementById("valor-recebido").value) || 0;
-        const troco = recebido - totalAtual;
-        const trocoEl = document.getElementById("troco-val");
-        const btnGuardar = document.getElementById("btn-guardar");
-
-        if (recebido >= totalAtual) {
-          trocoEl.textContent = troco.toFixed(2) + " €";
-          trocoEl.style.color = "var(--accent)";
-          btnGuardar.disabled = false;
-        } else {
-          trocoEl.textContent = recebido > 0 ? "Valor insuficiente" : "—";
-          trocoEl.style.color = "var(--danger)";
-          btnGuardar.disabled = true;
-        }
       }
     </script>
   </body>

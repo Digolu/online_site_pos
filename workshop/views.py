@@ -1,5 +1,5 @@
 import json
-import datetime
+from django.utils import timezone
 import csv
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponse
@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from .models import Produto, Seccao, Venda, VendeSe, Loja, Owner, Fornecedor, Contacto
+from .models import Produto, Seccao, Venda, VendeSe, Loja, Owner, Fornecedor, Contacto, Evento
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 
@@ -47,12 +47,17 @@ def nova_venda(request):
                 if metodo == 'mbway' and contacto_id:
                     contacto = Contacto.objects.filter(id=contacto_id).first()
 
+                evento = Evento.objects.filter(
+                    loja__nomeloja=loja_nome, ativo=True
+                ).first()   
+
                 venda = Venda.objects.create(
                     recibo=recibo,
                     total=round(total, 2),
-                    data=datetime.datetime.now(),
+                    data=timezone.now(),
                     metodo_pagamento=metodo,
                     contacto=contacto,
+                    evento=evento,        
                 )
                 for item in itens:
                     produto = Produto.objects.get(id=item['id'])
@@ -116,7 +121,7 @@ def criar_contacto(request):
 
 @login_required(login_url='login')
 def home(request):
-    lojas = Loja.objects.select_related('owner').all()
+    lojas = Loja.objects.select_related('owner').filter(oculta=False)
     owners = Owner.objects.all() 
     loja_nome = request.session.get('loja_atual')
     loja_sessao = Loja.objects.select_related('owner').filter(nomeloja=loja_nome).first() if loja_nome else None
@@ -157,84 +162,112 @@ def lista_vendas(request):
     if not loja_nome:
         return redirect('home')
 
-    data_filtro = request.GET.get('data', '')
-    # vendas que têm pelo menos um produto desta loja
+    data_filtro   = request.GET.get('data', '')
+    evento_filtro = request.GET.get('evento', '')
+
+    # Se não veio filtro de evento, usa o evento ativo por defeito
+    if not evento_filtro:
+        evento_ativo = Evento.objects.filter(loja__nomeloja=loja_nome, ativo=True).first()
+        if evento_ativo:
+            evento_filtro = str(evento_ativo.id)
+
     vendas = Venda.objects.filter(
         linhas__produto__seccao__loja__nomeloja=loja_nome
     ).distinct().order_by('-data')
 
     if data_filtro:
-        vendas = vendas.filter(data=data_filtro)
+        vendas = vendas.filter(data__date=data_filtro)
+
+    if evento_filtro:
+        vendas = vendas.filter(evento__id=evento_filtro)
+
+    eventos = Evento.objects.filter(loja__nomeloja=loja_nome).order_by('-data_inicio')
 
     return render(request, 'lista_vendas.html', {
-        'vendas': vendas,
-        'data_filtro': data_filtro,
-        'loja_atual': loja_nome,
+        'vendas':        vendas,
+        'data_filtro':   data_filtro,
+        'evento_filtro': evento_filtro,
+        'eventos':       eventos,
+        'loja_atual':    loja_nome,
     })
+
 # para exportar as vendas para CSV
 
 @login_required(login_url='login')
 def exportar_vendas(request):
+    loja_nome     = request.session.get('loja_atual')
+    evento_filtro = request.GET.get('evento', '')
+
     wb = Workbook()
     wb.remove(wb.active)
 
     cabecalho = [
-        'Recibo',
-        'Data',
-        'Loja',
-        'Método Pagamento',
-        'Recebedor',
-        'Total (€)',
-        'Produto',
-        'Quantidade',
-        'Preço Unit. (€)',
-        'Subtotal (€)',
+        'Recibo', 'Data', 'Loja', 'Evento',
+        'Método Pagamento', 'Recebedor', 'Total (€)',
+        'Produto', 'Quantidade', 'Preço Unit. (€)', 'Subtotal (€)',
     ]
 
     vendas = Venda.objects.prefetch_related(
         'linhas__produto__seccao__loja',
-        'contacto'
+        'contacto', 'evento',
     ).order_by('-data')
+
+    if loja_nome:
+        vendas = vendas.filter(
+            linhas__produto__seccao__loja__nomeloja=loja_nome
+        ).distinct()
+
+    if evento_filtro:
+        vendas = vendas.filter(evento__id=evento_filtro)
 
     folhas = {}
 
     for venda in vendas:
-        recebedor = '—'
+        recebedor   = '—'
+        nome_evento = venda.evento.nome if venda.evento else '—'
         if venda.metodo_pagamento == 'mbway' and venda.contacto:
             recebedor = f'{venda.contacto.nome} ({venda.contacto.telefone})'
 
-        for linha in venda.linhas.all():
-            loja = linha.produto.seccao.loja
+        linhas = list(venda.linhas.all())
+
+        for i, linha in enumerate(linhas):
+            loja      = linha.produto.seccao.loja
             nome_loja = loja.nomeloja
 
             if nome_loja not in folhas:
                 ws = wb.create_sheet(title=nome_loja[:31])
                 ws.append(cabecalho)
-
                 for col in range(1, len(cabecalho) + 1):
                     cell = ws.cell(row=1, column=col)
-                    cell.font = Font(bold=True)
-                    cell.fill = PatternFill(start_color='C8F060', end_color='C8F060', fill_type='solid')
+                    cell.font      = Font(bold=True)
+                    cell.fill      = PatternFill(start_color='C8F060', end_color='C8F060', fill_type='solid')
                     cell.alignment = Alignment(horizontal='center')
-
                 folhas[nome_loja] = ws
 
             ws = folhas[nome_loja]
 
-            ws.append([
-                venda.recibo,
-                venda.data.strftime('%d/%m/%Y %H:%M'),
-                nome_loja,
-                venda.metodo_pagamento,
-                recebedor,
-                float(venda.total),
+            # Só a primeira linha da venda tem os dados do cabeçalho da venda
+            if i == 0:
+                campos_venda = [
+                    venda.recibo,
+                    venda.data.strftime('%d/%m/%Y %H:%M'),
+                    nome_loja,
+                    nome_evento,
+                    venda.metodo_pagamento,
+                    recebedor,
+                    float(venda.total),
+                ]
+            else:
+                campos_venda = ['', '', '', '', '', '', '']
+
+            ws.append(campos_venda + [
                 linha.produto.nome,
                 linha.qtd,
                 float(linha.preco),
                 round(float(linha.preco) * linha.qtd, 2),
             ])
 
-    larguras = [10, 18, 20, 18, 28, 12, 25, 12, 16, 14]
+    larguras = [10, 18, 20, 18, 18, 28, 12, 25, 12, 16, 14]
     for ws in folhas.values():
         for i, largura in enumerate(larguras, 1):
             ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
@@ -264,7 +297,7 @@ def limpar_vendas(request):
 
 
 def lista_lojas(request):
-    lojas = Loja.objects.select_related('owner').all()
+    lojas = Loja.objects.select_related('owner').filter(oculta=False)
     return render(request, 'lista_lojas.html', {'lojas': lojas})
 
 def lista_owners(request):
@@ -274,7 +307,7 @@ def lista_owners(request):
 def selecionar_loja(request):
     if request.method == 'POST':
         loja_nome = request.POST.get('loja')
-        if Loja.objects.filter(nomeloja=loja_nome).exists():
+        if Loja.objects.filter(nomeloja=loja_nome, oculta=False).exists():        
             request.session['loja_atual'] = loja_nome
     return redirect('home')
 
