@@ -1,0 +1,78 @@
+/* ============================================
+   Sistema POS · Variáveis de tema (claro/escuro)
+   Guardar em: static/css/tema.css
+   ============================================ */
+
+:root,
+[data-tema="claro"] {
+  --bg: #f4f1e9;
+  --ink: #171918;
+  --muted: #71776f;
+  --soft: #ffffff;
+  --surface: #fbfaf6;
+  --surface-2: #ece7dc;
+  --line: #d9ddd2;
+  --accent: #437a5a;
+  --accent-dark: #254b36;
+  --danger: #b64040;
+  --danger-bg: #fff0ee;
+  --danger-border: #efc8c3;
+}
+
+[data-tema="escuro"] {
+  --bg: #14161a;
+  --ink: #f1f1ec;
+  --muted: #9aa098;
+  --soft: #1f2225;
+  --surface: #1b1d20;
+  --surface-2: #262925;
+  --line: #34373a;
+  --accent: #5fae82;
+  --accent-dark: #8fd4ab;
+  --danger: #e08585;
+  --danger-bg: #2a1a1a;
+  --danger-border: #4a2b2b;
+}
+
+/* Transição suave ao trocar de tema */
+body,
+.loja-btn,
+.card,
+.form-panel,
+.modal-card,
+input,
+select {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* ============================================
+   Botão de alternar tema (usado no base.html)
+   ============================================ */
+
+.tema-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--ink);
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s, background 0.18s;
+}
+
+.tema-toggle:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.tema-toggle svg {
+  width: 16px;
+  height: 16px;
+}

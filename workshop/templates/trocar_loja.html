@@ -1,82 +1,92 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trocar Loja</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0f0f0f; --surface: #1a1a1a; --border: #2e2e2e;
-    --accent: #c8f060; --text: #f0ede8; --text-muted: #7a7870;
-    --danger: #ff5f5f;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg); color: var(--text);
-    min-height: 100vh; display: flex;
-    align-items: center; justify-content: center;
-  }
-  .box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 40px; width: 100%; max-width: 400px;
-    display: flex; flex-direction: column; gap: 20px;
-  }
-  .aviso { display: flex; align-items: center; gap: 10px; }
-  .aviso-icon { font-size: 28px; }
-  h1 { font-size: 22px; font-weight: 600; }
-  p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-  .campo { display: flex; flex-direction: column; gap: 6px; }
-  label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-  input {
-    background: #111; border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
-    font-size: 14px; outline: none; transition: border-color 0.2s;
-  }
-  input:focus { border-color: var(--accent); }
-  .erro { font-size: 13px; color: var(--danger); }
-  .btns { display: flex; gap: 10px; }
-  .btn-cancelar {
-    flex: 1; padding: 13px; background: none; color: var(--text-muted);
-    border: 1px solid var(--border); border-radius: 10px;
-    font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer;
-    text-align: center; text-decoration: none; transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .btn-cancelar:hover { color: var(--text); border-color: var(--text-muted); }
-  .btn-confirmar {
-    flex: 1; padding: 13px; background: var(--accent); color: #0f0f0f;
-    border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif;
-    font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s;
-  }
-  .btn-confirmar:hover { background: #d8ff70; }
-</style>
-</head>
-<body>
+{% extends "base.html" %}
+{% load static %}
+
+{% block titulo %}Autorizar Trocar Loja{% endblock %}
+
+{% block extra_head %}
+  <style>
+    :root {
+      --bg: var(--soft); 
+      --surface: var(--surface); 
+      --surface2: var(--surface-2);
+      --border: var(--line);
+      --accent: var(--accent); 
+      --text: var(--ink); 
+      --text-muted: var(--muted);
+      --danger: var(--danger);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; width: 100%; max-width: 400px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .aviso { display: flex; align-items: center; gap: 12px; }
+    .aviso-icon { font-size: 28px; }
+    h1 { font-size: 22px; font-weight: 600; }
+    p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+    .campo { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+    input, select {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; outline: none; transition: border-color 0.2s; width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    .erro { font-size: 13px; color: var(--danger); }
+    .btns { display: flex; gap: 10px; margin-top: 8px; }
+    .btn-cancelar {
+      flex: 1; padding: 13px; background: none; color: var(--text-muted);
+      border: 1px solid var(--border); border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer;
+      text-align: center; text-decoration: none; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-cancelar:hover { color: var(--text); border-color: var(--text-muted); }
+    .btn-confirmar {
+      flex: 1; padding: 13px; background: var(--accent); color: var(--surface);
+      border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-confirmar:hover { opacity: 0.9; }
+  </style>
+{% endblock %}
+
+{% block content %}
 <div class="box">
   <div class="aviso">
     <span class="aviso-icon">🔒</span>
-    <h1>Trocar loja</h1>
+    <h1>Trocar de Loja</h1>
   </div>
-
-  <p>Confirma a tua password para trocar de loja.</p>
-
-  {% if erro %}
-  <div class="erro">{{ erro }}</div>
-  {% endif %}
+  
+  <p>Introduza a palavra-passe de autorização para confirmar a alteração do ambiente de trabalho.</p>
 
   <form method="POST">
     {% csrf_token %}
-    <div class="campo" style="margin-bottom: 20px;">
-      <label>Password</label>
-      <input type="password" name="password" autofocus placeholder="••••••••">
+    
+    <div class="campo">
+      <label for="id_password">Palavra-passe</label>
+      <input 
+        type="password" 
+        id="id_password" 
+        name="password"  placeholder="••••••••" 
+        required 
+      />
+      {% if erro %}
+        <span class="erro">⚠ {{ erro }}</span>
+      {% endif %}
     </div>
+
     <div class="btns">
       <a href="/" class="btn-cancelar">Cancelar</a>
       <button type="submit" class="btn-confirmar">Confirmar</button>
     </div>
   </form>
 </div>
-</body>
-</html>
+{% endblock %}

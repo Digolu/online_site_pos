@@ -1,173 +1,160 @@
-<!doctype html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Adicionar Produto</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --bg: #0f0f0f;
-        --surface: #1a1a1a;
-        --surface2: #242424;
-        --border: #2e2e2e;
-        --accent: #c8f060;
-        --text: #f0ede8;
-        --text-muted: #7a7870;
-        --danger: #ff5f5f;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: "DM Sans", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-      }
+{% extends "base.html" %}
+{% load static %}
 
-      header {
-        padding: 20px 32px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        position: sticky;
-        top: 0;
-        background: var(--bg);
-        z-index: 10;
-      }
-      .back-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-size: 13px;
-        transition: color 0.15s;
-      }
-      .back-btn:hover {
-        color: var(--accent);
-      }
-      header .sep {
-        color: var(--border);
-        font-size: 20px;
-      }
-      header h1 {
-        font-size: 15px;
-        font-weight: 500;
-        color: #b0ada8;
-      }
-      .loja-badge {
-        margin-left: auto;
-        font-family: "DM Mono", monospace;
-        font-size: 12px;
-        color: var(--accent);
-        background: #1e2a0e;
-        padding: 6px 14px;
-        border-radius: 20px;
-        border: 1px solid #3a5010;
-      }
+{% block titulo %}Adicionar Produto{% endblock %}
 
-      main {
-        max-width: 540px;
-        margin: 0 auto;
-        padding: 40px 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 28px;
-      }
+{% block extra_head %}
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: "DM Sans", sans-serif;
+    background: var(--soft);
+    color: var(--ink);
+    min-height: 100vh;
+  }
 
-      .form-titulo h2 {
-        font-size: 22px;
-        font-weight: 600;
-        margin-bottom: 6px;
-      }
-      .form-titulo p {
-        font-size: 13px;
-        color: var(--text-muted);
-      }
+  header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    background: var(--soft);
+    z-index: 10;
+  }
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.15s;
+  }
+  .back-btn:hover {
+    color: var(--accent);
+  }
+  header .sep {
+    color: var(--line);
+    font-size: 20px;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .loja-badge {
+    margin-left: auto;
+    font-family: "DM Mono", monospace;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--surface-2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+  }
 
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-      }
-      .campo {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .campo.full {
-        grid-column: 1 / -1;
-      }
-      label {
-        font-size: 11px;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-      input,
-      select {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 11px 14px;
-        color: var(--text);
-        font-family: "DM Sans", sans-serif;
-        font-size: 14px;
-        outline: none;
-        transition: border-color 0.2s;
-        width: 100%;
-      }
-      input:focus,
-      select:focus {
-        border-color: var(--accent);
-      }
-      select option {
-        background: var(--surface2);
-      }
+  main {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
 
-      .alerta {
-        padding: 13px 16px;
-        border-radius: 10px;
-        font-size: 13px;
-      }
-      .alerta.erro {
-        background: #2a1010;
-        border: 1px solid var(--danger);
-        color: var(--danger);
-      }
-      .alerta.sucesso {
-        background: #1a2a08;
-        border: 1px solid var(--accent);
-        color: var(--accent);
-      }
+  .form-titulo h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .form-titulo p {
+    font-size: 13px;
+    color: var(--muted);
+  }
 
-      .btn-submeter {
-        padding: 14px;
-        background: var(--accent);
-        color: #0f0f0f;
-        border: none;
-        border-radius: 12px;
-        font-family: "DM Sans", sans-serif;
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s;
-        width: 100%;
-      }
-      .btn-submeter:hover {
-        background: #d8ff70;
-      }
-    </style>
-  </head>
-  <body>
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .campo.full {
+    grid-column: 1 / -1;
+  }
+  label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  input,
+  select {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--ink);
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input:focus,
+  select:focus {
+    border-color: var(--accent);
+  }
+  select option {
+    background: var(--surface-2);
+  }
+
+  .alerta {
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+  .alerta.erro {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    color: var(--danger);
+  }
+  .alerta.sucesso {
+    background: var(--surface-2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-submeter {
+    padding: 14px;
+    background: var(--accent);
+    color: var(--soft);
+    border: none;
+    border-radius: 12px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: 100%;
+  }
+  .btn-submeter:hover {
+    background: var(--accent-dark);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
     <header>
       <a href="/" class="back-btn">
         <svg
@@ -297,8 +284,8 @@
                 display: none;
                 margin-top: 10px;
                 padding: 10px 14px;
-                background: #1e2a0e;
-                border: 1px solid #3a5010;
+                background: var(--surface-2);
+                border: 1px solid var(--line);
                 border-radius: 10px;
                 font-size: 12px;
                 color: var(--accent);
@@ -307,15 +294,15 @@
               "
             >
               <div>
-                <span style="color: var(--text-muted)">Email </span
+                <span style="color: var(--muted)">Email </span
                 ><span id="forn-email"></span>
               </div>
               <div>
-                <span style="color: var(--text-muted)">Contacto </span
+                <span style="color: var(--muted)">Contacto </span
                 ><span id="forn-tel"></span>
               </div>
               <div>
-                <span style="color: var(--text-muted)">Morada </span
+                <span style="color: var(--muted)">Morada </span
                 ><span id="forn-morada"></span>
               </div>
             </div>
@@ -341,6 +328,9 @@
         </button>
       </form>
     </main>
+{% endblock %}
+
+{% block extra_scripts %}
     <script>
       function mostrarInfoFornecedor(sel) {
         const info = document.getElementById("forn-info");
@@ -388,5 +378,4 @@
         info.style.display = 'flex';
       }
     </script>
-  </body>
-</html>
+{% endblock %}
