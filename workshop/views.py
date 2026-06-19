@@ -195,90 +195,97 @@ def lista_vendas(request):
 
 @login_required(login_url='login')
 def exportar_vendas(request):
-    loja_nome     = request.session.get('loja_atual')
-    evento_filtro = request.GET.get('evento', '')
+    try:
+        loja_nome     = request.session.get('loja_atual')
+        evento_filtro = request.GET.get('evento', '')
 
-    wb = Workbook()
-    wb.remove(wb.active)
+        wb = Workbook()
+        wb.remove(wb.active)
 
-    cabecalho = [
-        'Recibo', 'Data', 'Loja', 'Evento',
-        'Método Pagamento', 'Recebedor', 'Total (€)',
-        'Produto', 'Quantidade', 'Preço Unit. (€)', 'Subtotal (€)',
-    ]
+        cabecalho = [
+            'Recibo', 'Data', 'Loja', 'Evento',
+            'Método Pagamento', 'Recebedor', 'Total (€)',
+            'Produto', 'Quantidade', 'Preço Unit. (€)', 'Subtotal (€)',
+        ]
 
-    vendas = Venda.objects.prefetch_related(
-        'linhas__produto__seccao__loja',
-        'contacto', 'evento',
-    ).order_by('-data')
+        vendas = Venda.objects.prefetch_related(
+            'linhas__produto__seccao__loja',
+            'contacto', 'evento',
+        ).order_by('-data')
 
-    if loja_nome:
-        vendas = vendas.filter(
-            linhas__produto__seccao__loja__nomeloja=loja_nome
-        ).distinct()
+        if loja_nome:
+            vendas = vendas.filter(
+                linhas__produto__seccao__loja__nomeloja=loja_nome
+            ).distinct()
 
-    if evento_filtro:
-        vendas = vendas.filter(evento__id=evento_filtro)
+        if evento_filtro:
+            vendas = vendas.filter(evento__id=evento_filtro)
 
-    folhas = {}
+        folhas = {}
 
-    for venda in vendas:
-        recebedor   = '—'
-        nome_evento = venda.evento.nome if venda.evento else '—'
-        if venda.metodo_pagamento == 'mbway' and venda.contacto:
-            recebedor = f'{venda.contacto.nome} ({venda.contacto.telefone})'
+        for venda in vendas:
+            recebedor   = '—'
+            nome_evento = venda.evento.nome if venda.evento else '—'
+            if venda.metodo_pagamento == 'mbway' and venda.contacto:
+                recebedor = f'{venda.contacto.nome} ({venda.contacto.telefone})'
 
-        linhas = list(venda.linhas.all())
+            linhas = list(venda.linhas.all())
 
-        for i, linha in enumerate(linhas):
-            loja      = linha.produto.seccao.loja
-            nome_loja = loja.nomeloja
+            for i, linha in enumerate(linhas):
+                loja      = linha.produto.seccao.loja
+                nome_loja = loja.nomeloja
 
-            if nome_loja not in folhas:
-                ws = wb.create_sheet(title=nome_loja[:31])
-                ws.append(cabecalho)
-                for col in range(1, len(cabecalho) + 1):
-                    cell = ws.cell(row=1, column=col)
-                    cell.font      = Font(bold=True)
-                    cell.fill      = PatternFill(start_color='C8F060', end_color='C8F060', fill_type='solid')
-                    cell.alignment = Alignment(horizontal='center')
-                folhas[nome_loja] = ws
+                if nome_loja not in folhas:
+                    ws = wb.create_sheet(title=nome_loja[:31])
+                    ws.append(cabecalho)
+                    for col in range(1, len(cabecalho) + 1):
+                        cell = ws.cell(row=1, column=col)
+                        cell.font      = Font(bold=True)
+                        cell.fill      = PatternFill(start_color='C8F060', end_color='C8F060', fill_type='solid')
+                        cell.alignment = Alignment(horizontal='center')
+                    folhas[nome_loja] = ws
 
-            ws = folhas[nome_loja]
+                ws = folhas[nome_loja]
 
-            # Só a primeira linha da venda tem os dados do cabeçalho da venda
-            if i == 0:
-                campos_venda = [
-                    venda.recibo,
-                    venda.data.strftime('%d/%m/%Y %H:%M'),
-                    nome_loja,
-                    nome_evento,
-                    venda.metodo_pagamento,
-                    recebedor,
-                    float(venda.total),
-                ]
-            else:
-                campos_venda = ['', '', '', '', '', '', '']
+                # Só a primeira linha da venda tem os dados do cabeçalho da venda
+                if i == 0:
+                    campos_venda = [
+                        venda.recibo,
+                        venda.data.strftime('%d/%m/%Y %H:%M'),
+                        nome_loja,
+                        nome_evento,
+                        venda.metodo_pagamento,
+                        recebedor,
+                        float(venda.total),
+                    ]
+                else:
+                    campos_venda = ['', '', '', '', '', '', '']
 
-            ws.append(campos_venda + [
-                linha.produto.nome,
-                linha.qtd,
-                float(linha.preco),
-                round(float(linha.preco) * linha.qtd, 2),
-            ])
+                ws.append(campos_venda + [
+                    linha.produto.nome,
+                    linha.qtd,
+                    float(linha.preco),
+                    round(float(linha.preco) * linha.qtd, 2),
+                ])
 
-    larguras = [10, 18, 20, 18, 18, 28, 12, 25, 12, 16, 14]
-    for ws in folhas.values():
-        for i, largura in enumerate(larguras, 1):
-            ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
+        larguras = [10, 18, 20, 18, 18, 28, 12, 25, 12, 16, 14]
+        for ws in folhas.values():
+            for i, largura in enumerate(larguras, 1):
+                ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
 
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="vendas_por_loja.xlsx"'
-    wb.save(response)
-    return response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="vendas_por_loja.xlsx"'
+        wb.save(response)
+        return response
 
+    except Exception as e:
+        import traceback
+        print(f"ERRO EXPORTAR_VENDAS: {e}")
+        print(traceback.format_exc())
+        return HttpResponse(f"Erro ao exportar: {e}", status=500)
+        
 ## apagar dados
 
 @login_required(login_url='login')
