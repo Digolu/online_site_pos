@@ -221,11 +221,13 @@
       .export-btn {
         font-size: 12px;
         color: var(--accent);
-        text-decoration: none;
+        background: none;
         border: 1px solid var(--accent);
         padding: 6px 14px;
         border-radius: 20px;
         transition: all 0.15s;
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
       }
       .export-btn:hover { background: var(--accent); color: #0f0f0f; }
       .logout-btn {
@@ -238,6 +240,81 @@
         transition: all 0.15s;
       }
       .logout-btn:hover { background: var(--danger); color: #0f0f0f; }
+
+      /* modal exportação */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.aberto { display: flex; }
+      .modal-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 24px;
+        width: 360px;
+        max-width: 90vw;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .modal-box h2 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .modal-lista {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow-y: auto;
+        max-height: 320px;
+        padding-right: 4px;
+      }
+      .modal-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--text-soft);
+        padding: 8px 10px;
+        background: var(--surface2);
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .modal-check input { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+      .modal-acoes {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .modal-acoes button {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        cursor: pointer;
+        border: none;
+      }
+      .btn-confirmar-export {
+        background: var(--accent);
+        color: #0f0f0f;
+        font-weight: 600;
+      }
+      .btn-confirmar-export:hover { background: #d8ff70; }
+      .btn-cancelar-export {
+        background: none;
+        color: var(--text-muted);
+        border: 1px solid var(--border) !important;
+      }
+      .btn-cancelar-export:hover { color: var(--text); }
     </style>
   </head>
   <body>
@@ -251,8 +328,7 @@
       <span class="sep">›</span>
       <h1>Lista de Vendas</h1>
       <span class="total-badge">{{ vendas|length }} venda(s)</span>
-      <!-- Link de exportação preserva o filtro de evento ativo -->
-      <a href="/exportar_vendas/{% if evento_filtro %}?evento={{ evento_filtro }}{% endif %}" class="export-btn">⬇ Exportar Excel</a>
+      <button type="button" class="export-btn" onclick="abrirModalExport()">⬇ Exportar Excel</button>
       <a href="/logout/" class="logout-btn">Sair</a>
     </header>
 
@@ -330,10 +406,71 @@
       {% endif %}
     </main>
 
+    <!-- MODAL EXPORTAR -->
+    <div class="modal-overlay" id="modal-export">
+      <div class="modal-box">
+        <h2>Exportar vendas para Excel</h2>
+
+        <label class="modal-check">
+          <input type="checkbox" id="check-todos" checked onchange="toggleTodosEventos()">
+          Todos os eventos (inclui vendas sem evento)
+        </label>
+
+        <div class="modal-lista" id="lista-eventos-export">
+          {% for ev in eventos %}
+            <label class="modal-check">
+              <input type="checkbox" class="check-evento" value="{{ ev.id }}" disabled>
+              {{ ev.nome }}{% if ev.ativo %} ●{% endif %}
+            </label>
+          {% endfor %}
+          <label class="modal-check">
+            <input type="checkbox" class="check-evento" value="sem_evento" disabled>
+            Vendas sem evento associado
+          </label>
+        </div>
+
+        <div class="modal-acoes">
+          <button type="button" class="btn-cancelar-export" onclick="fecharModalExport()">Cancelar</button>
+          <button type="button" class="btn-confirmar-export" onclick="confirmarExport()">Exportar</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       function toggleVenda(recibo) {
         document.getElementById("linhas-" + recibo).classList.toggle("aberto");
         document.getElementById("toggle-" + recibo).classList.toggle("aberto");
+      }
+
+      function abrirModalExport() {
+        document.getElementById("modal-export").classList.add("aberto");
+      }
+      function fecharModalExport() {
+        document.getElementById("modal-export").classList.remove("aberto");
+      }
+      function toggleTodosEventos() {
+        const todos = document.getElementById("check-todos").checked;
+        document.querySelectorAll(".check-evento").forEach(cb => {
+          cb.disabled = todos;
+          if (todos) cb.checked = false;
+        });
+      }
+      function confirmarExport() {
+        const todos = document.getElementById("check-todos").checked;
+        let url = "/exportar_vendas/";
+
+        if (!todos) {
+          const selecionados = Array.from(document.querySelectorAll(".check-evento:checked"))
+            .map(cb => "evento=" + encodeURIComponent(cb.value));
+          if (selecionados.length === 0) {
+            alert("Seleciona pelo menos um evento, ou marca 'Todos os eventos'.");
+            return;
+          }
+          url += "?" + selecionados.join("&");
+        }
+
+        window.location.href = url;
+        fecharModalExport();
       }
     </script>
   </body>

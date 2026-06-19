@@ -1,15 +1,14 @@
 import json
 from django.utils import timezone
-import csv
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.db import transaction
+from django.db.models import Q
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from .models import Produto, Seccao, Venda, VendeSe, Loja, Owner, Fornecedor, Contacto, Evento
-from django.shortcuts import render, redirect, get_object_or_404
-from django.db import transaction
 
 
 
@@ -191,13 +190,12 @@ def lista_vendas(request):
         'loja_atual':    loja_nome,
     })
 
-# para exportar as vendas para CSV
 
 @login_required(login_url='login')
 def exportar_vendas(request):
     try:
-        loja_nome     = request.session.get('loja_atual')
-        evento_filtro = request.GET.get('evento', '')
+        loja_nome      = request.session.get('loja_atual')
+        eventos_filtro = request.GET.getlist('evento')  # lista de ids (strings); pode incluir 'sem_evento'
 
         wb = Workbook()
         wb.remove(wb.active)
@@ -218,8 +216,17 @@ def exportar_vendas(request):
                 linhas__produto__seccao__loja__nomeloja=loja_nome
             ).distinct()
 
-        if evento_filtro:
-            vendas = vendas.filter(evento__id=evento_filtro)
+        if eventos_filtro:
+            ids_eventos = [e for e in eventos_filtro if e != 'sem_evento']
+            incluir_sem_evento = 'sem_evento' in eventos_filtro
+
+            if ids_eventos and incluir_sem_evento:
+                vendas = vendas.filter(Q(evento__id__in=ids_eventos) | Q(evento__isnull=True))
+            elif ids_eventos:
+                vendas = vendas.filter(evento__id__in=ids_eventos)
+            elif incluir_sem_evento:
+                vendas = vendas.filter(evento__isnull=True)
+        # se eventos_filtro vier vazio (= "Todos"), não filtra -> inclui tudo
 
         folhas = {}
 
@@ -273,6 +280,13 @@ def exportar_vendas(request):
             for i, largura in enumerate(larguras, 1):
                 ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = largura
 
+        # Se não houve nenhuma venda válida, cria uma folha vazia com o cabeçalho
+        # para o ficheiro não ficar sem nenhuma folha visível (o que o openpyxl rejeita).
+        if not folhas:
+            ws = wb.create_sheet(title='Sem dados')
+            ws.append(cabecalho)
+            ws.append(['Sem vendas para os filtros selecionados.'])
+
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
@@ -285,7 +299,7 @@ def exportar_vendas(request):
         print(f"ERRO EXPORTAR_VENDAS: {e}")
         print(traceback.format_exc())
         return HttpResponse(f"Erro ao exportar: {e}", status=500)
-        
+
 ## apagar dados
 
 @login_required(login_url='login')
@@ -526,6 +540,7 @@ def ocultar_produto(request, produto_id):
         except Exception as e:
             return JsonResponse({'erro': str(e)}, status=400)
     return JsonResponse({'erro': 'Método não permitido'}, status=405)
+
 @login_required(login_url='login')
 def get_produto(request, produto_id):
     loja_nome = request.session.get('loja_atual')
